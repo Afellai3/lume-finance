@@ -1,310 +1,310 @@
--- Lume Finance Database Schema
--- SQLite compatible schema for personal finance management with deep cost breakdown
+-- Lume Finance - Schema Database
+-- Schema compatibile SQLite per gestione finanze personali con analisi costi dettagliata
 
 -- ============================================================================
--- CORE TABLES
+-- TABELLE PRINCIPALI
 -- ============================================================================
 
--- Accounts table: bank accounts, credit cards, cash wallets
-CREATE TABLE IF NOT EXISTS accounts (
+-- Tabella conti: conti bancari, carte di credito, portafogli contanti
+CREATE TABLE IF NOT EXISTS conti (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('checking', 'savings', 'credit_card', 'cash', 'investment')),
-    balance REAL NOT NULL DEFAULT 0.0,
-    currency TEXT NOT NULL DEFAULT 'EUR',
-    description TEXT,
-    is_active BOOLEAN DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('corrente', 'risparmio', 'carta_credito', 'contanti', 'investimento')),
+    saldo REAL NOT NULL DEFAULT 0.0,
+    valuta TEXT NOT NULL DEFAULT 'EUR',
+    descrizione TEXT,
+    attivo BOOLEAN DEFAULT 1,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Categories table: expense and income categories
-CREATE TABLE IF NOT EXISTS categories (
+-- Tabella categorie: categorie entrate e uscite
+CREATE TABLE IF NOT EXISTS categorie (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-    parent_id INTEGER,
-    icon TEXT,
-    color TEXT,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
+    nome TEXT NOT NULL UNIQUE,
+    tipo TEXT NOT NULL CHECK(tipo IN ('entrata', 'uscita')),
+    categoria_padre_id INTEGER,
+    icona TEXT,
+    colore TEXT,
+    descrizione TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (categoria_padre_id) REFERENCES categorie(id) ON DELETE SET NULL
 );
 
--- Transactions table: all financial movements
-CREATE TABLE IF NOT EXISTS transactions (
+-- Tabella movimenti: tutti i movimenti finanziari
+CREATE TABLE IF NOT EXISTS movimenti (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TIMESTAMP NOT NULL,
-    amount REAL NOT NULL CHECK(amount > 0),
-    type TEXT NOT NULL CHECK(type IN ('income', 'expense', 'transfer')),
-    category_id INTEGER,
-    account_id INTEGER NOT NULL,
-    to_account_id INTEGER, -- For transfers
-    description TEXT NOT NULL,
-    notes TEXT,
-    is_recurring BOOLEAN DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE,
-    FOREIGN KEY (to_account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    data TIMESTAMP NOT NULL,
+    importo REAL NOT NULL CHECK(importo > 0),
+    tipo TEXT NOT NULL CHECK(tipo IN ('entrata', 'uscita', 'trasferimento')),
+    categoria_id INTEGER,
+    conto_id INTEGER NOT NULL,
+    conto_destinazione_id INTEGER, -- Per trasferimenti
+    descrizione TEXT NOT NULL,
+    note TEXT,
+    ricorrente BOOLEAN DEFAULT 0,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (categoria_id) REFERENCES categorie(id) ON DELETE SET NULL,
+    FOREIGN KEY (conto_id) REFERENCES conti(id) ON DELETE CASCADE,
+    FOREIGN KEY (conto_destinazione_id) REFERENCES conti(id) ON DELETE CASCADE
 );
 
 -- ============================================================================
--- COST BREAKDOWN ENGINE TABLES
+-- TABELLE MOTORE ANALISI COSTI
 -- ============================================================================
 
--- Assets table: physical items with ongoing costs (cars, appliances, etc.)
-CREATE TABLE IF NOT EXISTS assets (
+-- Tabella beni: oggetti fisici con costi continuativi (auto, elettrodomestici, ecc.)
+CREATE TABLE IF NOT EXISTS beni (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('vehicle', 'appliance', 'property', 'other')),
-    purchase_date DATE,
-    purchase_price REAL,
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('veicolo', 'elettrodomestico', 'immobile', 'altro')),
+    data_acquisto DATE,
+    prezzo_acquisto REAL,
     
-    -- Vehicle specific fields
-    vehicle_fuel_type TEXT CHECK(vehicle_fuel_type IN ('gasoline', 'diesel', 'electric', 'hybrid', 'lpg')),
-    vehicle_avg_consumption REAL, -- L/100km or kWh/100km
-    vehicle_maintenance_cost_per_km REAL,
+    -- Campi specifici veicoli
+    veicolo_tipo_carburante TEXT CHECK(veicolo_tipo_carburante IN ('benzina', 'diesel', 'elettrico', 'ibrido', 'gpl')),
+    veicolo_consumo_medio REAL, -- L/100km o kWh/100km
+    veicolo_costo_manutenzione_per_km REAL,
     
-    -- Appliance specific fields
-    appliance_power_rating REAL, -- Watts
-    appliance_avg_hours_per_day REAL,
+    -- Campi specifici elettrodomestici
+    elettrodomestico_potenza REAL, -- Watt
+    elettrodomestico_ore_medie_giorno REAL,
     
-    -- General
-    estimated_lifetime_years INTEGER,
-    depreciation_rate REAL, -- Annual percentage
-    notes TEXT,
-    is_active BOOLEAN DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    -- Generale
+    durata_anni_stimata INTEGER,
+    tasso_ammortamento REAL, -- Percentuale annuale
+    note TEXT,
+    attivo BOOLEAN DEFAULT 1,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Asset usage tracking: record actual usage (km driven, hours used, etc.)
-CREATE TABLE IF NOT EXISTS asset_usage (
+-- Tracciamento utilizzo beni: registra utilizzo effettivo (km percorsi, ore uso, ecc.)
+CREATE TABLE IF NOT EXISTS utilizzo_beni (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    asset_id INTEGER NOT NULL,
-    date DATE NOT NULL,
+    bene_id INTEGER NOT NULL,
+    data DATE NOT NULL,
     
-    -- Usage metrics
-    km_driven REAL, -- For vehicles
-    hours_used REAL, -- For appliances
-    kwh_consumed REAL, -- For electric devices
+    -- Metriche di utilizzo
+    km_percorsi REAL, -- Per veicoli
+    ore_utilizzo REAL, -- Per elettrodomestici
+    kwh_consumati REAL, -- Per dispositivi elettrici
     
-    -- Cost at time of usage
-    fuel_price_per_liter REAL,
-    electricity_price_per_kwh REAL,
+    -- Costi al momento dell'utilizzo
+    prezzo_carburante_al_litro REAL,
+    prezzo_elettricita_per_kwh REAL,
     
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE CASCADE
+    note TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (bene_id) REFERENCES beni(id) ON DELETE CASCADE
 );
 
--- Cost breakdowns: granular decomposition of transaction costs
-CREATE TABLE IF NOT EXISTS cost_breakdowns (
+-- Scomposizione costi: decomposizione granulare dei costi delle transazioni
+CREATE TABLE IF NOT EXISTS scomposizione_costi (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_id INTEGER NOT NULL,
-    asset_id INTEGER, -- Link to asset if applicable
+    movimento_id INTEGER NOT NULL,
+    bene_id INTEGER, -- Collega al bene se applicabile
     
-    component_name TEXT NOT NULL, -- e.g., 'fuel', 'wear', 'electricity', 'base_cost'
-    component_value REAL NOT NULL,
-    unit TEXT, -- e.g., 'EUR', 'km', 'kWh'
-    percentage_of_total REAL, -- Percentage of parent transaction
+    nome_componente TEXT NOT NULL, -- es: 'carburante', 'usura', 'elettricita', 'costo_base'
+    valore_componente REAL NOT NULL,
+    unita TEXT, -- es: 'EUR', 'km', 'kWh'
+    percentuale_totale REAL, -- Percentuale del movimento totale
     
-    -- Calculation metadata
-    calculation_method TEXT, -- Description of how this was calculated
-    calculation_params TEXT, -- JSON string with parameters used
+    -- Metadata calcolo
+    metodo_calcolo TEXT, -- Descrizione di come è stato calcolato
+    parametri_calcolo TEXT, -- Stringa JSON con parametri usati
     
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
-    FOREIGN KEY (asset_id) REFERENCES assets(id) ON DELETE SET NULL
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (movimento_id) REFERENCES movimenti(id) ON DELETE CASCADE,
+    FOREIGN KEY (bene_id) REFERENCES beni(id) ON DELETE SET NULL
 );
 
--- Cost centers: allocate costs to different areas (e.g., kitchen, bedroom for utilities)
-CREATE TABLE IF NOT EXISTS cost_centers (
+-- Centri di costo: alloca i costi a diverse aree (es: cucina, camera per utenze)
+CREATE TABLE IF NOT EXISTS centri_costo (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL UNIQUE,
-    type TEXT, -- e.g., 'room', 'activity', 'person'
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    nome TEXT NOT NULL UNIQUE,
+    tipo TEXT, -- es: 'stanza', 'attivita', 'persona'
+    descrizione TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Cost center allocations: distribute transaction costs across centers
-CREATE TABLE IF NOT EXISTS cost_center_allocations (
+-- Allocazioni centri di costo: distribuisce i costi dei movimenti tra i centri
+CREATE TABLE IF NOT EXISTS allocazioni_centri_costo (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    transaction_id INTEGER NOT NULL,
-    cost_center_id INTEGER NOT NULL,
-    allocated_amount REAL NOT NULL,
-    allocation_percentage REAL,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
-    FOREIGN KEY (cost_center_id) REFERENCES cost_centers(id) ON DELETE CASCADE
+    movimento_id INTEGER NOT NULL,
+    centro_costo_id INTEGER NOT NULL,
+    importo_allocato REAL NOT NULL,
+    percentuale_allocazione REAL,
+    note TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (movimento_id) REFERENCES movimenti(id) ON DELETE CASCADE,
+    FOREIGN KEY (centro_costo_id) REFERENCES centri_costo(id) ON DELETE CASCADE
 );
 
 -- ============================================================================
--- BUDGETS & PLANNING
+-- BUDGET E PIANIFICAZIONE
 -- ============================================================================
 
--- Budgets table: spending limits per category
-CREATE TABLE IF NOT EXISTS budgets (
+-- Tabella budget: limiti di spesa per categoria
+CREATE TABLE IF NOT EXISTS budget (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    category_id INTEGER NOT NULL,
-    amount REAL NOT NULL CHECK(amount > 0),
-    period TEXT NOT NULL CHECK(period IN ('daily', 'weekly', 'monthly', 'yearly')),
-    start_date DATE NOT NULL,
-    end_date DATE,
-    is_active BOOLEAN DEFAULT 1,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    categoria_id INTEGER NOT NULL,
+    importo REAL NOT NULL CHECK(importo > 0),
+    periodo TEXT NOT NULL CHECK(periodo IN ('giornaliero', 'settimanale', 'mensile', 'annuale')),
+    data_inizio DATE NOT NULL,
+    data_fine DATE,
+    attivo BOOLEAN DEFAULT 1,
+    note TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (categoria_id) REFERENCES categorie(id) ON DELETE CASCADE
 );
 
--- Savings goals: target amounts to save
-CREATE TABLE IF NOT EXISTS savings_goals (
+-- Obiettivi risparmio: importi target da risparmiare
+CREATE TABLE IF NOT EXISTS obiettivi_risparmio (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    target_amount REAL NOT NULL CHECK(target_amount > 0),
-    current_amount REAL DEFAULT 0.0,
-    target_date DATE,
-    account_id INTEGER,
-    priority INTEGER DEFAULT 1 CHECK(priority BETWEEN 1 AND 5),
-    is_completed BOOLEAN DEFAULT 0,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
-);
-
--- ============================================================================
--- INVESTMENTS & SIMULATIONS
--- ============================================================================
-
--- Investments table: stocks, bonds, funds, crypto
-CREATE TABLE IF NOT EXISTS investments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    account_id INTEGER NOT NULL,
-    symbol TEXT, -- Ticker symbol (e.g., AAPL, BTC)
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('stock', 'bond', 'fund', 'etf', 'crypto', 'other')),
-    quantity REAL NOT NULL DEFAULT 0,
-    purchase_price REAL,
-    purchase_date DATE,
-    current_price REAL,
-    currency TEXT DEFAULT 'EUR',
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
-);
-
--- Investment transactions: buy/sell operations
-CREATE TABLE IF NOT EXISTS investment_transactions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    investment_id INTEGER NOT NULL,
-    date TIMESTAMP NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('buy', 'sell', 'dividend')),
-    quantity REAL NOT NULL,
-    price_per_unit REAL NOT NULL,
-    total_amount REAL NOT NULL,
-    fees REAL DEFAULT 0,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (investment_id) REFERENCES investments(id) ON DELETE CASCADE
-);
-
--- Loans & mortgages: track debt and payment schedules
-CREATE TABLE IF NOT EXISTS loans (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL CHECK(type IN ('mortgage', 'personal_loan', 'car_loan', 'student_loan', 'other')),
-    principal_amount REAL NOT NULL,
-    interest_rate REAL NOT NULL, -- Annual percentage
-    term_months INTEGER NOT NULL,
-    start_date DATE NOT NULL,
-    monthly_payment REAL NOT NULL,
-    remaining_balance REAL,
-    account_id INTEGER, -- Account used for payments
-    notes TEXT,
-    is_active BOOLEAN DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL
-);
-
--- Loan payments: track individual payments
-CREATE TABLE IF NOT EXISTS loan_payments (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    loan_id INTEGER NOT NULL,
-    payment_date DATE NOT NULL,
-    amount_paid REAL NOT NULL,
-    principal_paid REAL NOT NULL,
-    interest_paid REAL NOT NULL,
-    remaining_balance REAL NOT NULL,
-    transaction_id INTEGER, -- Link to transaction if recorded
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (loan_id) REFERENCES loans(id) ON DELETE CASCADE,
-    FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE SET NULL
+    nome TEXT NOT NULL,
+    importo_target REAL NOT NULL CHECK(importo_target > 0),
+    importo_attuale REAL DEFAULT 0.0,
+    data_target DATE,
+    conto_id INTEGER,
+    priorita INTEGER DEFAULT 1 CHECK(priorita BETWEEN 1 AND 5),
+    completato BOOLEAN DEFAULT 0,
+    note TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conto_id) REFERENCES conti(id) ON DELETE SET NULL
 );
 
 -- ============================================================================
--- INDEXES FOR PERFORMANCE
+-- INVESTIMENTI E SIMULAZIONI
 -- ============================================================================
 
-CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
-CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
-CREATE INDEX IF NOT EXISTS idx_cost_breakdowns_transaction ON cost_breakdowns(transaction_id);
-CREATE INDEX IF NOT EXISTS idx_asset_usage_asset ON asset_usage(asset_id);
-CREATE INDEX IF NOT EXISTS idx_asset_usage_date ON asset_usage(date);
-CREATE INDEX IF NOT EXISTS idx_investments_account ON investments(account_id);
-CREATE INDEX IF NOT EXISTS idx_loan_payments_loan ON loan_payments(loan_id);
+-- Tabella investimenti: azioni, obbligazioni, fondi, crypto
+CREATE TABLE IF NOT EXISTS investimenti (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conto_id INTEGER NOT NULL,
+    simbolo TEXT, -- Ticker symbol (es: AAPL, BTC)
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('azione', 'obbligazione', 'fondo', 'etf', 'crypto', 'altro')),
+    quantita REAL NOT NULL DEFAULT 0,
+    prezzo_acquisto REAL,
+    data_acquisto DATE,
+    prezzo_attuale REAL,
+    valuta TEXT DEFAULT 'EUR',
+    note TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conto_id) REFERENCES conti(id) ON DELETE CASCADE
+);
+
+-- Operazioni investimenti: operazioni di acquisto/vendita
+CREATE TABLE IF NOT EXISTS operazioni_investimenti (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    investimento_id INTEGER NOT NULL,
+    data TIMESTAMP NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('acquisto', 'vendita', 'dividendo')),
+    quantita REAL NOT NULL,
+    prezzo_unitario REAL NOT NULL,
+    importo_totale REAL NOT NULL,
+    commissioni REAL DEFAULT 0,
+    note TEXT,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (investimento_id) REFERENCES investimenti(id) ON DELETE CASCADE
+);
+
+-- Prestiti e mutui: traccia debiti e piani di pagamento
+CREATE TABLE IF NOT EXISTS prestiti (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome TEXT NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('mutuo', 'prestito_personale', 'prestito_auto', 'prestito_studio', 'altro')),
+    importo_capitale REAL NOT NULL,
+    tasso_interesse REAL NOT NULL, -- Percentuale annuale
+    durata_mesi INTEGER NOT NULL,
+    data_inizio DATE NOT NULL,
+    rata_mensile REAL NOT NULL,
+    saldo_residuo REAL,
+    conto_id INTEGER, -- Conto usato per pagamenti
+    note TEXT,
+    attivo BOOLEAN DEFAULT 1,
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    modificato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conto_id) REFERENCES conti(id) ON DELETE SET NULL
+);
+
+-- Pagamenti prestiti: traccia singoli pagamenti
+CREATE TABLE IF NOT EXISTS pagamenti_prestiti (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prestito_id INTEGER NOT NULL,
+    data_pagamento DATE NOT NULL,
+    importo_pagato REAL NOT NULL,
+    capitale_pagato REAL NOT NULL,
+    interessi_pagati REAL NOT NULL,
+    saldo_residuo REAL NOT NULL,
+    movimento_id INTEGER, -- Collega al movimento se registrato
+    creato_il TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (prestito_id) REFERENCES prestiti(id) ON DELETE CASCADE,
+    FOREIGN KEY (movimento_id) REFERENCES movimenti(id) ON DELETE SET NULL
+);
 
 -- ============================================================================
--- TRIGGERS FOR AUTOMATIC UPDATES
+-- INDICI PER PERFORMANCE
 -- ============================================================================
 
--- Update account balance on transaction insert
-CREATE TRIGGER IF NOT EXISTS update_account_balance_on_insert
-AFTER INSERT ON transactions
+CREATE INDEX IF NOT EXISTS idx_movimenti_data ON movimenti(data);
+CREATE INDEX IF NOT EXISTS idx_movimenti_conto ON movimenti(conto_id);
+CREATE INDEX IF NOT EXISTS idx_movimenti_categoria ON movimenti(categoria_id);
+CREATE INDEX IF NOT EXISTS idx_scomposizione_costi_movimento ON scomposizione_costi(movimento_id);
+CREATE INDEX IF NOT EXISTS idx_utilizzo_beni_bene ON utilizzo_beni(bene_id);
+CREATE INDEX IF NOT EXISTS idx_utilizzo_beni_data ON utilizzo_beni(data);
+CREATE INDEX IF NOT EXISTS idx_investimenti_conto ON investimenti(conto_id);
+CREATE INDEX IF NOT EXISTS idx_pagamenti_prestiti_prestito ON pagamenti_prestiti(prestito_id);
+
+-- ============================================================================
+-- TRIGGER PER AGGIORNAMENTI AUTOMATICI
+-- ============================================================================
+
+-- Aggiorna saldo conto all'inserimento movimento
+CREATE TRIGGER IF NOT EXISTS aggiorna_saldo_conto_inserimento
+AFTER INSERT ON movimenti
 FOR EACH ROW
 BEGIN
-    UPDATE accounts 
-    SET balance = balance + 
+    UPDATE conti 
+    SET saldo = saldo + 
         CASE 
-            WHEN NEW.type = 'income' THEN NEW.amount
-            WHEN NEW.type = 'expense' THEN -NEW.amount
-            WHEN NEW.type = 'transfer' THEN -NEW.amount
+            WHEN NEW.tipo = 'entrata' THEN NEW.importo
+            WHEN NEW.tipo = 'uscita' THEN -NEW.importo
+            WHEN NEW.tipo = 'trasferimento' THEN -NEW.importo
         END,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = NEW.account_id;
+        modificato_il = CURRENT_TIMESTAMP
+    WHERE id = NEW.conto_id;
     
-    -- Handle transfer destination
-    UPDATE accounts
-    SET balance = balance + NEW.amount,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = NEW.to_account_id AND NEW.type = 'transfer';
+    -- Gestisce destinazione trasferimento
+    UPDATE conti
+    SET saldo = saldo + NEW.importo,
+        modificato_il = CURRENT_TIMESTAMP
+    WHERE id = NEW.conto_destinazione_id AND NEW.tipo = 'trasferimento';
 END;
 
--- Update timestamps on record modification
-CREATE TRIGGER IF NOT EXISTS update_accounts_timestamp
-AFTER UPDATE ON accounts
+-- Aggiorna timestamp alla modifica record
+CREATE TRIGGER IF NOT EXISTS aggiorna_timestamp_conti
+AFTER UPDATE ON conti
 FOR EACH ROW
 BEGIN
-    UPDATE accounts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    UPDATE conti SET modificato_il = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS update_transactions_timestamp
-AFTER UPDATE ON transactions
+CREATE TRIGGER IF NOT EXISTS aggiorna_timestamp_movimenti
+AFTER UPDATE ON movimenti
 FOR EACH ROW
 BEGIN
-    UPDATE transactions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    UPDATE movimenti SET modificato_il = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
-CREATE TRIGGER IF NOT EXISTS update_assets_timestamp
-AFTER UPDATE ON assets
+CREATE TRIGGER IF NOT EXISTS aggiorna_timestamp_beni
+AFTER UPDATE ON beni
 FOR EACH ROW
 BEGIN
-    UPDATE assets SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+    UPDATE beni SET modificato_il = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;

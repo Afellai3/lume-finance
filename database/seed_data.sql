@@ -1,100 +1,100 @@
--- Lume Finance - Seed Data
--- Sample data for testing and development
+-- Lume Finance - Dati di Esempio
+-- Dati campione per testing e sviluppo
 
 -- ============================================================================
--- DEFAULT CATEGORIES
+-- CATEGORIE PREDEFINITE
 -- ============================================================================
 
--- Income categories
-INSERT INTO categories (name, type, icon, color) VALUES
-('Salary', 'income', '💼', '#10b981'),
-('Freelance', 'income', '💻', '#34d399'),
-('Investments', 'income', '📈', '#6ee7b7'),
-('Other Income', 'income', '💰', '#a7f3d0');
+-- Categorie entrate
+INSERT INTO categorie (nome, tipo, icona, colore) VALUES
+('Stipendio', 'entrata', '💼', '#10b981'),
+('Freelance', 'entrata', '💻', '#34d399'),
+('Investimenti', 'entrata', '📈', '#6ee7b7'),
+('Altre Entrate', 'entrata', '💰', '#a7f3d0');
 
--- Expense categories - Main
-INSERT INTO categories (name, type, icon, color) VALUES
-('Housing', 'expense', '🏠', '#ef4444'),
-('Transportation', 'expense', '🚗', '#f97316'),
-('Food & Dining', 'expense', '🍽️', '#f59e0b'),
-('Utilities', 'expense', '⚡', '#eab308'),
-('Healthcare', 'expense', '🏥', '#84cc16'),
-('Entertainment', 'expense', '🎮', '#22c55e'),
-('Shopping', 'expense', '🛍️', '#14b8a6'),
-('Education', 'expense', '📚', '#06b6d4'),
-('Personal Care', 'expense', '💇', '#0ea5e9'),
-('Insurance', 'expense', '🛡️', '#3b82f6'),
-('Savings', 'expense', '💎', '#6366f1'),
-('Other Expenses', 'expense', '📦', '#8b5cf6');
+-- Categorie uscite - Principali
+INSERT INTO categorie (nome, tipo, icona, colore) VALUES
+('Casa', 'uscita', '🏠', '#ef4444'),
+('Trasporti', 'uscita', '🚗', '#f97316'),
+('Cibo e Ristorazione', 'uscita', '🍽️', '#f59e0b'),
+('Utenze', 'uscita', '⚡', '#eab308'),
+('Salute', 'uscita', '🏥', '#84cc16'),
+('Intrattenimento', 'uscita', '🎮', '#22c55e'),
+('Shopping', 'uscita', '🛍️', '#14b8a6'),
+('Istruzione', 'uscita', '📚', '#06b6d4'),
+('Cura Personale', 'uscita', '💇', '#0ea5e9'),
+('Assicurazioni', 'uscita', '🛡️', '#3b82f6'),
+('Risparmi', 'uscita', '💎', '#6366f1'),
+('Altre Spese', 'uscita', '📦', '#8b5cf6');
 
--- Expense subcategories
-INSERT INTO categories (name, type, parent_id, icon, color) VALUES
--- Transportation subcategories
-('Fuel', 'expense', (SELECT id FROM categories WHERE name = 'Transportation'), '⛽', '#fb923c'),
-('Car Maintenance', 'expense', (SELECT id FROM categories WHERE name = 'Transportation'), '🔧', '#fdba74'),
-('Public Transport', 'expense', (SELECT id FROM categories WHERE name = 'Transportation'), '🚌', '#fed7aa'),
-('Parking', 'expense', (SELECT id FROM categories WHERE name = 'Transportation'), '🅿️', '#ffedd5'),
+-- Sottocategorie uscite
+INSERT INTO categorie (nome, tipo, categoria_padre_id, icona, colore) VALUES
+-- Sottocategorie Trasporti
+('Carburante', 'uscita', (SELECT id FROM categorie WHERE nome = 'Trasporti'), '⛽', '#fb923c'),
+('Manutenzione Auto', 'uscita', (SELECT id FROM categorie WHERE nome = 'Trasporti'), '🔧', '#fdba74'),
+('Trasporto Pubblico', 'uscita', (SELECT id FROM categorie WHERE nome = 'Trasporti'), '🚌', '#fed7aa'),
+('Parcheggio', 'uscita', (SELECT id FROM categorie WHERE nome = 'Trasporti'), '🅿️', '#ffedd5'),
 
--- Food subcategories
-('Groceries', 'expense', (SELECT id FROM categories WHERE name = 'Food & Dining'), '🛒', '#fbbf24'),
-('Restaurants', 'expense', (SELECT id FROM categories WHERE name = 'Food & Dining'), '🍴', '#fcd34d'),
-('Coffee & Snacks', 'expense', (SELECT id FROM categories WHERE name = 'Food & Dining'), '☕', '#fde68a'),
+-- Sottocategorie Cibo
+('Spesa Alimentare', 'uscita', (SELECT id FROM categorie WHERE nome = 'Cibo e Ristorazione'), '🛒', '#fbbf24'),
+('Ristoranti', 'uscita', (SELECT id FROM categorie WHERE nome = 'Cibo e Ristorazione'), '🍴', '#fcd34d'),
+('Caffè e Snack', 'uscita', (SELECT id FROM categorie WHERE nome = 'Cibo e Ristorazione'), '☕', '#fde68a'),
 
--- Utilities subcategories
-('Electricity', 'expense', (SELECT id FROM categories WHERE name = 'Utilities'), '💡', '#facc15'),
-('Water', 'expense', (SELECT id FROM categories WHERE name = 'Utilities'), '💧', '#fde047'),
-('Gas', 'expense', (SELECT id FROM categories WHERE name = 'Utilities'), '🔥', '#fef08a'),
-('Internet', 'expense', (SELECT id FROM categories WHERE name = 'Utilities'), '🌐', '#fef9c3');
-
--- ============================================================================
--- SAMPLE ACCOUNTS
--- ============================================================================
-
-INSERT INTO accounts (name, type, balance, currency, description) VALUES
-('Main Checking', 'checking', 2500.00, 'EUR', 'Primary bank account'),
-('Savings Account', 'savings', 10000.00, 'EUR', 'Emergency fund and savings'),
-('Credit Card', 'credit_card', -450.00, 'EUR', 'Visa credit card'),
-('Cash Wallet', 'cash', 150.00, 'EUR', 'Physical cash on hand');
+-- Sottocategorie Utenze
+('Elettricità', 'uscita', (SELECT id FROM categorie WHERE nome = 'Utenze'), '💡', '#facc15'),
+('Acqua', 'uscita', (SELECT id FROM categorie WHERE nome = 'Utenze'), '💧', '#fde047'),
+('Gas', 'uscita', (SELECT id FROM categorie WHERE nome = 'Utenze'), '🔥', '#fef08a'),
+('Internet', 'uscita', (SELECT id FROM categorie WHERE nome = 'Utenze'), '🌐', '#fef9c3');
 
 -- ============================================================================
--- SAMPLE ASSETS
+-- CONTI DI ESEMPIO
 -- ============================================================================
 
-INSERT INTO assets (name, type, purchase_date, purchase_price, vehicle_fuel_type, vehicle_avg_consumption, vehicle_maintenance_cost_per_km, estimated_lifetime_years, depreciation_rate) VALUES
-('Fiat Panda 2020', 'vehicle', '2020-03-15', 12000.00, 'gasoline', 5.5, 0.08, 10, 15.0);
-
-INSERT INTO assets (name, type, purchase_date, purchase_price, appliance_power_rating, appliance_avg_hours_per_day, estimated_lifetime_years) VALUES
-('Samsung Refrigerator', 'appliance', '2023-06-10', 650.00, 150, 24, 12),
-('LG Washing Machine', 'appliance', '2022-09-20', 450.00, 2000, 1.5, 10),
-('Bosch Dishwasher', 'appliance', '2023-01-05', 550.00, 1800, 2, 10);
+INSERT INTO conti (nome, tipo, saldo, valuta, descrizione) VALUES
+('Conto Corrente Principale', 'corrente', 2500.00, 'EUR', 'Conto bancario principale'),
+('Conto Risparmio', 'risparmio', 10000.00, 'EUR', 'Fondo emergenze e risparmi'),
+('Carta di Credito', 'carta_credito', -450.00, 'EUR', 'Carta di credito Visa'),
+('Portafoglio Contanti', 'contanti', 150.00, 'EUR', 'Contanti fisici');
 
 -- ============================================================================
--- SAMPLE COST CENTERS
+-- BENI DI ESEMPIO
 -- ============================================================================
 
-INSERT INTO cost_centers (name, type, description) VALUES
-('Kitchen', 'room', 'Kitchen area - appliances and utilities'),
-('Living Room', 'room', 'Living room - entertainment and utilities'),
-('Bedroom', 'room', 'Bedroom - climate control'),
-('Commute', 'activity', 'Daily commute costs'),
-('Leisure Trips', 'activity', 'Weekend and vacation travel');
+INSERT INTO beni (nome, tipo, data_acquisto, prezzo_acquisto, veicolo_tipo_carburante, veicolo_consumo_medio, veicolo_costo_manutenzione_per_km, durata_anni_stimata, tasso_ammortamento) VALUES
+('Fiat Panda 2020', 'veicolo', '2020-03-15', 12000.00, 'benzina', 5.5, 0.08, 10, 15.0);
+
+INSERT INTO beni (nome, tipo, data_acquisto, prezzo_acquisto, elettrodomestico_potenza, elettrodomestico_ore_medie_giorno, durata_anni_stimata) VALUES
+('Frigorifero Samsung', 'elettrodomestico', '2023-06-10', 650.00, 150, 24, 12),
+('Lavatrice LG', 'elettrodomestico', '2022-09-20', 450.00, 2000, 1.5, 10),
+('Lavastoviglie Bosch', 'elettrodomestico', '2023-01-05', 550.00, 1800, 2, 10);
 
 -- ============================================================================
--- SAMPLE BUDGETS
+-- CENTRI DI COSTO DI ESEMPIO
 -- ============================================================================
 
-INSERT INTO budgets (category_id, amount, period, start_date) VALUES
-((SELECT id FROM categories WHERE name = 'Food & Dining'), 400.00, 'monthly', '2026-02-01'),
-((SELECT id FROM categories WHERE name = 'Transportation'), 200.00, 'monthly', '2026-02-01'),
-((SELECT id FROM categories WHERE name = 'Entertainment'), 150.00, 'monthly', '2026-02-01'),
-((SELECT id FROM categories WHERE name = 'Utilities'), 180.00, 'monthly', '2026-02-01');
+INSERT INTO centri_costo (nome, tipo, descrizione) VALUES
+('Cucina', 'stanza', 'Area cucina - elettrodomestici e utenze'),
+('Soggiorno', 'stanza', 'Soggiorno - intrattenimento e utenze'),
+('Camera da Letto', 'stanza', 'Camera da letto - climatizzazione'),
+('Pendolarismo', 'attivita', 'Costi spostamenti casa-lavoro'),
+('Viaggi Leisure', 'attivita', 'Viaggi weekend e vacanze');
 
 -- ============================================================================
--- SAMPLE SAVINGS GOALS
+-- BUDGET DI ESEMPIO
 -- ============================================================================
 
-INSERT INTO savings_goals (name, target_amount, current_amount, target_date, priority) VALUES
-('Emergency Fund', 15000.00, 10000.00, '2026-12-31', 5),
-('New Laptop', 1200.00, 450.00, '2026-06-30', 3),
-('Summer Vacation', 2500.00, 800.00, '2026-07-01', 2),
-('Home Renovation', 8000.00, 1200.00, '2027-03-31', 4);
+INSERT INTO budget (categoria_id, importo, periodo, data_inizio) VALUES
+((SELECT id FROM categorie WHERE nome = 'Cibo e Ristorazione'), 400.00, 'mensile', '2026-02-01'),
+((SELECT id FROM categorie WHERE nome = 'Trasporti'), 200.00, 'mensile', '2026-02-01'),
+((SELECT id FROM categorie WHERE nome = 'Intrattenimento'), 150.00, 'mensile', '2026-02-01'),
+((SELECT id FROM categorie WHERE nome = 'Utenze'), 180.00, 'mensile', '2026-02-01');
+
+-- ============================================================================
+-- OBIETTIVI DI RISPARMIO DI ESEMPIO
+-- ============================================================================
+
+INSERT INTO obiettivi_risparmio (nome, importo_target, importo_attuale, data_target, priorita) VALUES
+('Fondo Emergenze', 15000.00, 10000.00, '2026-12-31', 5),
+('Nuovo Laptop', 1200.00, 450.00, '2026-06-30', 3),
+('Vacanza Estiva', 2500.00, 800.00, '2026-07-01', 2),
+('Ristrutturazione Casa', 8000.00, 1200.00, '2027-03-31', 4);
