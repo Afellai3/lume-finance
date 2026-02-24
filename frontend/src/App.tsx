@@ -1,0 +1,39 @@
+import { useState } from 'react'
+import './App.css'
+import Sidebar from './components/Sidebar'
+import Dashboard from './pages/Dashboard'
+import Movimenti from './pages/Movimenti'
+import Conti from './pages/Conti'
+import Beni from './pages/Beni'
+
+type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni'
+
+function App() {
+  const [currentPage, setCurrentPage] = useState<Page>('movimenti')
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />
+      case 'movimenti':
+        return <Movimenti />
+      case 'conti':
+        return <Conti />
+      case 'beni':
+        return <Beni />
+      default:
+        return <Movimenti />
+    }
+  }
+
+  return (
+    <div className="app">
+      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
+      <main className="main-content">
+        {renderPage()}
+      </main>
+    </div>
+  )
+}
+
+export default App
