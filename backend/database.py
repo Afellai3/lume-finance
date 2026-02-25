@@ -55,7 +55,7 @@ def init_db():
         cursor = conn.execute("SELECT COUNT(*) FROM conti")
         if cursor.fetchone()[0] == 0:
             # Esegui seed solo se vuoto
-            with open("database/seed.sql") as f:
+            with open("database/seed_data.sql") as f:
                 conn.executescript(f.read())
         
         conn.commit()
