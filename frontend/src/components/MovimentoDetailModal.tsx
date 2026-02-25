@@ -38,8 +38,8 @@ interface ScomposizioneComponente {
 }
 
 interface Scomposizione {
-  totale: number;
-  componenti: ScomposizioneComponente[];
+  totale?: number;
+  componenti?: ScomposizioneComponente[];
 }
 
 interface MovimentoDetailModalProps {
@@ -77,10 +77,15 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
       const response = await fetch(`/api/movimenti/${movimento.id}/scomposizione`);
       if (response.ok) {
         const data = await response.json();
+        console.log('Scomposizione data:', data); // Debug
         setScomposizione(data);
+      } else {
+        console.error('Scomposizione fetch failed:', response.status);
+        setScomposizione(null);
       }
     } catch (error) {
       console.error('Errore caricamento scomposizione:', error);
+      setScomposizione(null);
     } finally {
       setLoadingScomposizione(false);
     }
@@ -163,6 +168,9 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
     padding: `${theme.spacing.sm} 0`,
     borderBottom: `1px solid ${theme.colors.border.light}`,
   };
+
+  // Check if scomposizione has valid componenti array
+  const hasValidScomposizione = scomposizione && Array.isArray(scomposizione.componenti) && scomposizione.componenti.length > 0;
 
   return (
     <div style={overlayStyles} onClick={onClose}>
@@ -350,9 +358,9 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                 <div style={{ textAlign: 'center', padding: theme.spacing.lg, color: theme.colors.text.secondary }}>
                   Caricamento...
                 </div>
-              ) : scomposizione ? (
+              ) : hasValidScomposizione ? (
                 <Card padding="md" style={{ backgroundColor: theme.colors.background }}>
-                  {scomposizione.componenti.map((comp, index) => (
+                  {scomposizione.componenti!.map((comp, index) => (
                     <div key={index} style={rowStyles}>
                       <div>
                         <div style={{ 
@@ -390,28 +398,30 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                       </div>
                     </div>
                   ))}
-                  <div style={{
-                    ...rowStyles,
-                    borderBottom: 'none',
-                    paddingTop: theme.spacing.md,
-                    marginTop: theme.spacing.sm,
-                    borderTop: `2px solid ${theme.colors.border.DEFAULT}`,
-                  }}>
+                  {scomposizione.totale !== undefined && (
                     <div style={{
-                      fontSize: theme.typography.fontSize.base,
-                      fontWeight: theme.typography.fontWeight.bold,
-                      color: theme.colors.text.primary,
+                      ...rowStyles,
+                      borderBottom: 'none',
+                      paddingTop: theme.spacing.md,
+                      marginTop: theme.spacing.sm,
+                      borderTop: `2px solid ${theme.colors.border.DEFAULT}`,
                     }}>
-                      Totale Effettivo
+                      <div style={{
+                        fontSize: theme.typography.fontSize.base,
+                        fontWeight: theme.typography.fontWeight.bold,
+                        color: theme.colors.text.primary,
+                      }}>
+                        Totale Effettivo
+                      </div>
+                      <div style={{
+                        fontSize: theme.typography.fontSize.lg,
+                        fontWeight: theme.typography.fontWeight.bold,
+                        color: theme.colors.primary.DEFAULT,
+                      }}>
+                        {formatCurrency(scomposizione.totale)}
+                      </div>
                     </div>
-                    <div style={{
-                      fontSize: theme.typography.fontSize.lg,
-                      fontWeight: theme.typography.fontWeight.bold,
-                      color: theme.colors.primary.DEFAULT,
-                    }}>
-                      {formatCurrency(scomposizione.totale)}
-                    </div>
-                  </div>
+                  )}
                 </Card>
               ) : (
                 <div style={{ 
