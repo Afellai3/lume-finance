@@ -39,6 +39,13 @@ export interface Movimento {
   categoria_nome?: string
   categoria_icona?: string
   conto_nome?: string
+  // Scomposizione costi
+  bene_id?: number
+  bene_nome?: string
+  bene_tipo?: string
+  km_percorsi?: number
+  ore_utilizzo?: number
+  scomposizione_json?: string
 }
 
 export interface Categoria {
