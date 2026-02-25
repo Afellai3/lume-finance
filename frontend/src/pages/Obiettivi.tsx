@@ -21,6 +21,13 @@ interface Obiettivo {
   icona?: string;
 }
 
+interface Movimento {
+  id: number;
+  importo: number;
+  tipo: string;
+  obiettivo_id?: number;
+}
+
 function Obiettivi() {
   const [obiettivi, setObiettivi] = useState<Obiettivo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,48 +37,40 @@ function Obiettivi() {
   const fetchObiettivi = async () => {
     setLoading(true);
     try {
-      // Use analytics/dashboard endpoint which has correct importo_attuale calculation
-      const response = await fetch('/api/analytics/dashboard');
-      if (response.ok) {
-        const dashboardData = await response.json();
-        
-        // Extract obiettivi from dashboard
-        if (dashboardData.obiettivi_risparmio && dashboardData.obiettivi_risparmio.length > 0) {
-          // Transform dashboard goals into Obiettivo format
-          const obiettiviData = dashboardData.obiettivi_risparmio.map((goal: any) => ({
-            id: goal.id,
-            nome: goal.nome,
-            descrizione: goal.descrizione,
-            importo_target: goal.importo_target || goal.target || 0,
-            importo_attuale: goal.importo_accumulato || goal.importo_corrente || goal.importo_attuale || 0,
-            importo_corrente: goal.importo_accumulato || goal.importo_corrente || goal.importo_attuale || 0,
-            data_target: goal.data_target || goal.data_scadenza,
-            data_scadenza: goal.data_scadenza || goal.data_target,
-            completato: goal.completato || false,
-            priorita: goal.priorita || 1,
-            icona: goal.icona
-          }));
-          setObiettivi(obiettiviData);
-        } else {
-          // Fallback to direct endpoint if dashboard doesn't have goals
-          const obiettiviResponse = await fetch('/api/obiettivi');
-          if (obiettiviResponse.ok) {
-            const data = await obiettiviResponse.json();
-            setObiettivi(data || []);
-          } else {
-            setObiettivi([]);
-          }
-        }
-      } else {
-        // Last resort: try direct obiettivi endpoint
-        const obiettiviResponse = await fetch('/api/obiettivi');
-        if (obiettiviResponse.ok) {
-          const data = await obiettiviResponse.json();
-          setObiettivi(data || []);
-        } else {
-          setObiettivi([]);
-        }
+      // Fetch obiettivi structure
+      const obiettiviResponse = await fetch('/api/obiettivi');
+      if (!obiettiviResponse.ok) {
+        setObiettivi([]);
+        setLoading(false);
+        return;
       }
+      
+      const obiettiviData = await obiettiviResponse.json();
+      
+      // Fetch ALL movements to calculate actual amounts
+      const movimentiResponse = await fetch('/api/movimenti?per_page=1000');
+      let movimenti: Movimento[] = [];
+      
+      if (movimentiResponse.ok) {
+        const movimentiData = await movimentiResponse.json();
+        movimenti = movimentiData.items || movimentiData || [];
+      }
+      
+      // Calculate importo_attuale for each obiettivo by summing movements
+      const obiettiviWithAmounts = obiettiviData.map((obiettivo: Obiettivo) => {
+        // Sum all income movements (entrata) linked to this obiettivo
+        const importoCalcolato = movimenti
+          .filter((m: Movimento) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata')
+          .reduce((sum: number, m: Movimento) => sum + (m.importo || 0), 0);
+        
+        return {
+          ...obiettivo,
+          importo_attuale: importoCalcolato,
+          importo_corrente: importoCalcolato
+        };
+      });
+      
+      setObiettivi(obiettiviWithAmounts);
     } catch (error) {
       console.error('Errore:', error);
       setObiettivi([]);
