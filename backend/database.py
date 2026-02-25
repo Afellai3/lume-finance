@@ -39,7 +39,7 @@ def init_db():
         if not db_exists:
             # Database nuovo, esegui schema completo
             print("Creating new database...")
-            with open("database/schema.sql") as f:
+            with open("database/schema.sql", encoding='utf-8') as f:
                 conn.executescript(f.read())
             print("  ✓ Schema created")
         else:
@@ -52,7 +52,7 @@ def init_db():
             for migration_file in migration_files:
                 print(f"Executing migration: {migration_file.name}")
                 try:
-                    with open(migration_file) as f:
+                    with open(migration_file, encoding='utf-8') as f:
                         conn.executescript(f.read())
                     print(f"  ✓ {migration_file.name} completed")
                 except sqlite3.OperationalError as e:
@@ -74,7 +74,7 @@ def init_db():
         if cursor.fetchone()[0] == 0:
             # Esegui seed solo se vuoto
             print("Database is empty, loading seed data...")
-            with open("database/seed_data.sql") as f:
+            with open("database/seed_data.sql", encoding='utf-8') as f:
                 conn.executescript(f.read())
             print("  ✓ Seed data loaded")
         else:
