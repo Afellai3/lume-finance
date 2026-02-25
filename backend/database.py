@@ -30,9 +30,20 @@ def init_db():
     Path("data").mkdir(exist_ok=True)
     
     with get_db_connection() as conn:
-        # Esegui schema
-        with open("database/schema.sql") as f:
-            conn.executescript(f.read())
+        # Verifica se database esiste e ha tabelle
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='conti'"
+        )
+        db_exists = cursor.fetchone() is not None
+        
+        if not db_exists:
+            # Database nuovo, esegui schema completo
+            print("Creating new database...")
+            with open("database/schema.sql") as f:
+                conn.executescript(f.read())
+            print("  ✓ Schema created")
+        else:
+            print("Database already exists, skipping schema")
         
         # Esegui migrations se esistono
         migrations_dir = Path("database/migrations")
@@ -45,18 +56,29 @@ def init_db():
                         conn.executescript(f.read())
                     print(f"  ✓ {migration_file.name} completed")
                 except sqlite3.OperationalError as e:
-                    # Ignora errori tipo "colonna già esistente"
-                    if "duplicate column name" in str(e) or "already exists" in str(e):
+                    error_msg = str(e).lower()
+                    # Ignora errori per elementi già esistenti
+                    if any(phrase in error_msg for phrase in [
+                        "duplicate column name",
+                        "already exists",
+                        "table", 
+                        "index"
+                    ]):
                         print(f"  → {migration_file.name} already applied")
                     else:
+                        print(f"  ✗ Error in {migration_file.name}: {e}")
                         raise
         
-        # Verifica se database è vuoto
+        # Verifica se database è vuoto (nessun dato)
         cursor = conn.execute("SELECT COUNT(*) FROM conti")
         if cursor.fetchone()[0] == 0:
             # Esegui seed solo se vuoto
+            print("Database is empty, loading seed data...")
             with open("database/seed_data.sql") as f:
                 conn.executescript(f.read())
+            print("  ✓ Seed data loaded")
+        else:
+            print("Database has data, skipping seed")
         
         conn.commit()
         print("✓ Database initialized successfully")
