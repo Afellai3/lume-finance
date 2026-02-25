@@ -37,9 +37,18 @@ interface ScomposizioneComponente {
   dettagli?: string;
 }
 
-interface Scomposizione {
-  totale?: number;
-  componenti?: ScomposizioneComponente[];
+interface ScomposizioneData {
+  bene_id: number;
+  bene_nome: string;
+  bene_tipo: string;
+  costo_diretto: number;
+  costo_nascosto: number;
+  costo_totale: number;
+  riepilogo?: {
+    costo_per_km?: number;
+    costo_per_ora?: number;
+  };
+  scomposizione: ScomposizioneComponente[];
 }
 
 interface MovimentoDetailModalProps {
@@ -48,7 +57,7 @@ interface MovimentoDetailModalProps {
 }
 
 export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDetailModalProps) {
-  const [scomposizione, setScomposizione] = useState<Scomposizione | null>(null);
+  const [scomposizioneData, setScomposizioneData] = useState<ScomposizioneData | null>(null);
   const [loadingScomposizione, setLoadingScomposizione] = useState(false);
 
   useEffect(() => {
@@ -65,7 +74,7 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
     if (movimento?.bene_id) {
       fetchScomposizione();
     } else {
-      setScomposizione(null);
+      setScomposizioneData(null);
     }
   }, [movimento]);
 
@@ -77,15 +86,15 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
       const response = await fetch(`/api/movimenti/${movimento.id}/scomposizione`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Scomposizione data:', data); // Debug
-        setScomposizione(data);
+        console.log('Scomposizione data:', data);
+        setScomposizioneData(data);
       } else {
         console.error('Scomposizione fetch failed:', response.status);
-        setScomposizione(null);
+        setScomposizioneData(null);
       }
     } catch (error) {
       console.error('Errore caricamento scomposizione:', error);
-      setScomposizione(null);
+      setScomposizioneData(null);
     } finally {
       setLoadingScomposizione(false);
     }
@@ -169,8 +178,11 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
     borderBottom: `1px solid ${theme.colors.border.light}`,
   };
 
-  // Check if scomposizione has valid componenti array
-  const hasValidScomposizione = scomposizione && Array.isArray(scomposizione.componenti) && scomposizione.componenti.length > 0;
+  // Check if scomposizione has valid data
+  const hasValidScomposizione = 
+    scomposizioneData && 
+    Array.isArray(scomposizioneData.scomposizione) && 
+    scomposizioneData.scomposizione.length > 0;
 
   return (
     <div style={overlayStyles} onClick={onClose}>
@@ -360,7 +372,36 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                 </div>
               ) : hasValidScomposizione ? (
                 <Card padding="md" style={{ backgroundColor: theme.colors.background }}>
-                  {scomposizione.componenti!.map((comp, index) => (
+                  {/* Cost Summary */}
+                  <div style={{ marginBottom: theme.spacing.md }}>
+                    <div style={{ display: 'flex', gap: theme.spacing.md, marginBottom: theme.spacing.sm }}>
+                      <Badge variant="success" size="sm">
+                        💵 Diretto: {formatCurrency(scomposizioneData.costo_diretto)}
+                      </Badge>
+                      <Badge variant="warning" size="sm">
+                        👻 Nascosto: {formatCurrency(scomposizioneData.costo_nascosto)}
+                      </Badge>
+                    </div>
+                    {scomposizioneData.riepilogo?.costo_per_km && (
+                      <div style={{ 
+                        fontSize: theme.typography.fontSize.xs,
+                        color: theme.colors.text.secondary 
+                      }}>
+                        📊 Costo per km: {formatCurrency(scomposizioneData.riepilogo.costo_per_km)}
+                      </div>
+                    )}
+                    {scomposizioneData.riepilogo?.costo_per_ora && (
+                      <div style={{ 
+                        fontSize: theme.typography.fontSize.xs,
+                        color: theme.colors.text.secondary 
+                      }}>
+                        📊 Costo per ora: {formatCurrency(scomposizioneData.riepilogo.costo_per_ora)}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Components */}
+                  {scomposizioneData.scomposizione.map((comp, index) => (
                     <div key={index} style={rowStyles}>
                       <div>
                         <div style={{ 
@@ -398,30 +439,30 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                       </div>
                     </div>
                   ))}
-                  {scomposizione.totale !== undefined && (
+
+                  {/* Total */}
+                  <div style={{
+                    ...rowStyles,
+                    borderBottom: 'none',
+                    paddingTop: theme.spacing.md,
+                    marginTop: theme.spacing.sm,
+                    borderTop: `2px solid ${theme.colors.border.DEFAULT}`,
+                  }}>
                     <div style={{
-                      ...rowStyles,
-                      borderBottom: 'none',
-                      paddingTop: theme.spacing.md,
-                      marginTop: theme.spacing.sm,
-                      borderTop: `2px solid ${theme.colors.border.DEFAULT}`,
+                      fontSize: theme.typography.fontSize.base,
+                      fontWeight: theme.typography.fontWeight.bold,
+                      color: theme.colors.text.primary,
                     }}>
-                      <div style={{
-                        fontSize: theme.typography.fontSize.base,
-                        fontWeight: theme.typography.fontWeight.bold,
-                        color: theme.colors.text.primary,
-                      }}>
-                        Totale Effettivo
-                      </div>
-                      <div style={{
-                        fontSize: theme.typography.fontSize.lg,
-                        fontWeight: theme.typography.fontWeight.bold,
-                        color: theme.colors.primary.DEFAULT,
-                      }}>
-                        {formatCurrency(scomposizione.totale)}
-                      </div>
+                      Totale Effettivo
                     </div>
-                  )}
+                    <div style={{
+                      fontSize: theme.typography.fontSize.lg,
+                      fontWeight: theme.typography.fontWeight.bold,
+                      color: theme.colors.primary.DEFAULT,
+                    }}>
+                      {formatCurrency(scomposizioneData.costo_totale)}
+                    </div>
+                  </div>
                 </Card>
               ) : (
                 <div style={{ 
