@@ -58,6 +58,15 @@ function Obiettivi() {
     return diffDays;
   };
 
+  const calculatePercentage = (current: number, target: number): number => {
+    // Safety check for division by zero or undefined values
+    const safeCurrent = current ?? 0;
+    const safeTarget = target ?? 0;
+    
+    if (safeTarget === 0) return 0;
+    return (safeCurrent / safeTarget) * 100;
+  };
+
   if (loading) {
     return <div style={{ padding: theme.spacing.xl, textAlign: 'center', color: theme.colors.text.secondary }}>Caricamento...</div>;
   }
@@ -98,7 +107,7 @@ function Obiettivi() {
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
                 {obiettiviAttivi.map((goal) => {
-                  const percentuale = (goal.importo_corrente / goal.importo_target) * 100;
+                  const percentuale = calculatePercentage(goal.importo_corrente, goal.importo_target);
                   const daysRemaining = getDaysRemaining(goal.data_scadenza);
                   
                   return (
@@ -141,9 +150,9 @@ function Obiettivi() {
                         </div>
                       </div>
                       <ProgressBar 
-                        value={goal.importo_corrente} 
-                        max={goal.importo_target} 
-                        label={`${formatCurrency(goal.importo_corrente)} / ${formatCurrency(goal.importo_target)}`}
+                        value={goal.importo_corrente || 0} 
+                        max={goal.importo_target || 1} 
+                        label={`${formatCurrency(goal.importo_corrente || 0)} / ${formatCurrency(goal.importo_target || 0)}`}
                         showLabel
                         variant="default"
                       />
@@ -181,7 +190,7 @@ function Obiettivi() {
                           {goal.nome}
                         </h4>
                         <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.success }}>
-                          {formatCurrency(goal.importo_target)}
+                          {formatCurrency(goal.importo_target || 0)}
                         </p>
                       </div>
                     </div>

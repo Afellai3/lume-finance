@@ -24,13 +24,22 @@ function Budget() {
   const fetchBudgets = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/budget/corrente');
+      // Get current month and year
+      const now = new Date();
+      const mese = now.getMonth() + 1; // JavaScript months are 0-indexed
+      const anno = now.getFullYear();
+      
+      const response = await fetch(`/api/budget/corrente?mese=${mese}&anno=${anno}`);
       if (response.ok) {
         const data = await response.json();
         setBudgets(data);
+      } else {
+        // If 422, it means no budgets exist for current month, show empty state
+        setBudgets([]);
       }
     } catch (error) {
       console.error('Errore:', error);
+      setBudgets([]);
     } finally {
       setLoading(false);
     }
@@ -44,8 +53,8 @@ function Budget() {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
   };
 
-  const totalBudget = budgets.reduce((sum, b) => sum + b.importo_budget, 0);
-  const totalSpeso = budgets.reduce((sum, b) => sum + b.importo_speso, 0);
+  const totalBudget = budgets.reduce((sum, b) => sum + (b.importo_budget || 0), 0);
+  const totalSpeso = budgets.reduce((sum, b) => sum + (b.importo_speso || 0), 0);
   const percentualeGlobale = totalBudget > 0 ? (totalSpeso / totalBudget) * 100 : 0;
 
   if (loading) {
@@ -66,18 +75,20 @@ function Budget() {
       </div>
 
       {/* Global Summary */}
-      <Card padding="lg">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-          <div>
-            <p style={{ margin: 0, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>Budget Totale</p>
-            <h3 style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
-              {formatCurrency(totalSpeso)} / {formatCurrency(totalBudget)}
-            </h3>
+      {budgets.length > 0 && (
+        <Card padding="lg">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
+            <div>
+              <p style={{ margin: 0, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>Budget Totale</p>
+              <h3 style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+                {formatCurrency(totalSpeso)} / {formatCurrency(totalBudget)}
+              </h3>
+            </div>
+            <TrendingUp size={32} color={percentualeGlobale < 80 ? theme.colors.success : theme.colors.warning} />
           </div>
-          <TrendingUp size={32} color={percentualeGlobale < 80 ? theme.colors.success : theme.colors.warning} />
-        </div>
-        <ProgressBar value={totalSpeso} max={totalBudget} showLabel variant="default" />
-      </Card>
+          <ProgressBar value={totalSpeso} max={totalBudget} showLabel variant="default" />
+        </Card>
+      )}
 
       {/* Budget Items */}
       {budgets.length === 0 ? (
@@ -111,14 +122,14 @@ function Budget() {
                     {budget.categoria_nome}
                   </h4>
                   <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                    {formatCurrency(budget.importo_speso)} / {formatCurrency(budget.importo_budget)}
+                    {formatCurrency(budget.importo_speso || 0)} / {formatCurrency(budget.importo_budget || 0)}
                   </p>
                 </div>
-                {budget.percentuale_uso >= 90 && (
+                {(budget.percentuale_uso || 0) >= 90 && (
                   <AlertCircle size={20} color={theme.colors.danger} />
                 )}
               </div>
-              <ProgressBar value={budget.importo_speso} max={budget.importo_budget} variant="default" />
+              <ProgressBar value={budget.importo_speso || 0} max={budget.importo_budget || 1} variant="default" />
             </Card>
           ))}
         </div>
