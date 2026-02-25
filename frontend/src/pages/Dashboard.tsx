@@ -6,6 +6,10 @@ import { Badge } from '../components/ui/Badge';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { theme, getCategoryColor } from '../styles/theme';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import TrendChart from '../components/charts/TrendChart';
+import ComparisonCard from '../components/dashboard/ComparisonCard';
+import BudgetWarnings from '../components/dashboard/BudgetWarnings';
+import TopSpese from '../components/dashboard/TopSpese';
 
 interface DashboardData {
   kpi: {
@@ -34,6 +38,98 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('1m');
+
+  // Mock data for new analytics components (will be replaced with API calls)
+  const mockTrendData = [
+    { periodo: 'Set 2025', entrate: 3200, uscite: 2800 },
+    { periodo: 'Ott 2025', entrate: 3500, uscite: 2650 },
+    { periodo: 'Nov 2025', entrate: 3100, uscite: 2900 },
+    { periodo: 'Dic 2025', entrate: 4200, uscite: 3500 },
+    { periodo: 'Gen 2026', entrate: 3300, uscite: 2700 },
+    { periodo: 'Feb 2026', entrate: 3600, uscite: 2850 },
+  ];
+
+  const mockComparisonData = {
+    periodo_corrente: {
+      label: 'Febbraio 2026',
+      entrate: 3600,
+      uscite: 2850,
+      bilancio: 750,
+    },
+    periodo_precedente: {
+      label: 'Gennaio 2026',
+      entrate: 3300,
+      uscite: 2700,
+      bilancio: 600,
+    },
+  };
+
+  const mockBudgetWarnings = [
+    {
+      categoria_nome: 'Casa',
+      categoria_icona: '🏠',
+      limite: 1000,
+      speso: 850,
+      percentuale: 85,
+    },
+    {
+      categoria_nome: 'Alimentari',
+      categoria_icona: '🍕',
+      limite: 500,
+      speso: 460,
+      percentuale: 92,
+    },
+    {
+      categoria_nome: 'Trasporti',
+      categoria_icona: '🚗',
+      limite: 300,
+      speso: 255,
+      percentuale: 85,
+    },
+  ];
+
+  const mockTopSpese = [
+    {
+      id: 1,
+      descrizione: 'Affitto casa',
+      importo: -850,
+      data: '2026-02-01',
+      categoria_nome: 'Casa',
+      categoria_icona: '🏠',
+    },
+    {
+      id: 2,
+      descrizione: 'Spesa Carrefour',
+      importo: -120,
+      data: '2026-02-15',
+      categoria_nome: 'Alimentari',
+      categoria_icona: '🍕',
+    },
+    {
+      id: 3,
+      descrizione: 'Rifornimento Eni',
+      importo: -85,
+      data: '2026-02-10',
+      categoria_nome: 'Trasporti',
+      categoria_icona: '⛽',
+    },
+    {
+      id: 4,
+      descrizione: 'Cena ristorante',
+      importo: -65,
+      data: '2026-02-14',
+      categoria_nome: 'Svago',
+      categoria_icona: '🍴',
+    },
+    {
+      id: 5,
+      descrizione: 'Amazon ordine',
+      importo: -45,
+      data: '2026-02-18',
+      categoria_nome: 'Shopping',
+      categoria_icona: '🛍️',
+    },
+  ];
 
   const fetchDashboard = async () => {
     setLoading(true);
@@ -187,6 +283,12 @@ function Dashboard() {
     gap: theme.spacing.md,
   };
 
+  const twoColGridStyles: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+    gap: theme.spacing.lg,
+  };
+
   const balanceCardStyles: React.CSSProperties = {
     background: theme.colors.primary.gradient,
     padding: theme.spacing.xl,
@@ -197,36 +299,46 @@ function Dashboard() {
 
   return (
     <div style={containerStyles}>
-      {/* Period Filter */}
-      <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
-        <Button
-          variant={periodFilter === '1m' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={() => setPeriodFilter('1m')}
-        >
-          Mese
-        </Button>
-        <Button
-          variant={periodFilter === '3m' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={() => setPeriodFilter('3m')}
-        >
-          3 Mesi
-        </Button>
-        <Button
-          variant={periodFilter === '6m' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={() => setPeriodFilter('6m')}
-        >
-          6 Mesi
-        </Button>
-        <Button
-          variant={periodFilter === '1y' ? 'primary' : 'secondary'}
-          size="sm"
-          onClick={() => setPeriodFilter('1y')}
-        >
-          Anno
-        </Button>
+      {/* Header with Period Filter */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md }}>
+        <div>
+          <h1 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+            Dashboard
+          </h1>
+          <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+            Panoramica finanziaria
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+          <Button
+            variant={periodFilter === '1m' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setPeriodFilter('1m')}
+          >
+            Mese
+          </Button>
+          <Button
+            variant={periodFilter === '3m' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setPeriodFilter('3m')}
+          >
+            3 Mesi
+          </Button>
+          <Button
+            variant={periodFilter === '6m' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setPeriodFilter('6m')}
+          >
+            6 Mesi
+          </Button>
+          <Button
+            variant={periodFilter === '1y' ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setPeriodFilter('1y')}
+          >
+            Anno
+          </Button>
+        </div>
       </div>
 
       {/* Balance Card - Large Featured Card */}
@@ -242,16 +354,16 @@ function Dashboard() {
           </div>
           <Wallet size={40} style={{ opacity: 0.8 }} />
         </div>
-        <div style={{ display: 'flex', gap: theme.spacing.xl, marginTop: theme.spacing.lg }}>
+        <div style={{ display: 'flex', gap: theme.spacing.xl, marginTop: theme.spacing.lg, flexWrap: 'wrap' }}>
           <div>
             <p style={{ fontSize: theme.typography.fontSize.xs, opacity: 0.8 }}>Entrate</p>
-            <p style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold }}>
+            <p style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold, margin: 0 }}>
               {formatCurrency(data.kpi.entrate_mese)}
             </p>
           </div>
           <div>
             <p style={{ fontSize: theme.typography.fontSize.xs, opacity: 0.8 }}>Uscite</p>
-            <p style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold }}>
+            <p style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold, margin: 0 }}>
               {formatCurrency(data.kpi.uscite_mese)}
             </p>
           </div>
@@ -260,6 +372,7 @@ function Dashboard() {
             <p style={{ 
               fontSize: theme.typography.fontSize.lg, 
               fontWeight: theme.typography.fontWeight.semibold,
+              margin: 0,
               color: data.kpi.saldo_mese >= 0 ? '#A8E6CF' : '#FFB3BA'
             }}>
               {formatCurrency(data.kpi.saldo_mese)}
@@ -345,6 +458,18 @@ function Dashboard() {
           </div>
         </Card>
       </div>
+
+      {/* SPRINT 2: Trend Chart */}
+      <TrendChart data={mockTrendData} loading={false} />
+
+      {/* SPRINT 2: Comparison + Budget Warnings Grid */}
+      <div style={twoColGridStyles}>
+        <ComparisonCard data={mockComparisonData} loading={false} />
+        <BudgetWarnings warnings={mockBudgetWarnings} loading={false} />
+      </div>
+
+      {/* SPRINT 2: Top Spese */}
+      <TopSpese spese={mockTopSpese} loading={false} limit={5} />
 
       {/* Category Spending Chart */}
       {data.spese_per_categoria && data.spese_per_categoria.length > 0 && (
