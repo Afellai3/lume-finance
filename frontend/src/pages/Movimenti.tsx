@@ -84,6 +84,21 @@ function Movimenti() {
     fetchData();
   }, []);
 
+  const handleCreate = () => {
+    alert('Funzionalità in arrivo: Nuovo Movimento');
+    // TODO: Open modal/form
+  };
+
+  const handleEdit = (id: number) => {
+    alert(`Funzionalità in arrivo: Modifica movimento #${id}`);
+    // TODO: Open modal/form with movimento data
+  };
+
+  const handleExport = () => {
+    alert('Funzionalità in arrivo: Esporta CSV');
+    // TODO: Implement CSV export
+  };
+
   const filteredMovimenti = movimenti.filter(m => {
     if (filters.search && !m.descrizione.toLowerCase().includes(filters.search.toLowerCase())) return false;
     if (filters.tipo && m.tipo !== filters.tipo) return false;
@@ -155,7 +170,7 @@ function Movimenti() {
           </p>
         </div>
         <div style={actionsStyles}>
-          <Button variant="secondary" size="sm" leftIcon={<Download size={16} />}>
+          <Button variant="secondary" size="sm" leftIcon={<Download size={16} />} onClick={handleExport}>
             Esporta
           </Button>
           <Button 
@@ -166,7 +181,7 @@ function Movimenti() {
           >
             Filtri {activeFiltersCount > 0 && `(${activeFiltersCount})`}
           </Button>
-          <Button variant="primary" size="sm" leftIcon={<Plus size={16} />}>
+          <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreate}>
             Nuovo
           </Button>
         </div>
@@ -269,7 +284,7 @@ function Movimenti() {
             <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>💸</div>
             <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun movimento trovato</h3>
             <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia aggiungendo il tuo primo movimento</p>
-            <Button variant="primary" leftIcon={<Plus size={16} />}>Aggiungi Movimento</Button>
+            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreate}>Aggiungi Movimento</Button>
           </div>
         </Card>
       ) : (
@@ -318,7 +333,7 @@ function Movimenti() {
                     {movimento.tipo === 'entrata' ? '+' : '-'}{formatCurrency(Math.abs(movimento.importo))}
                   </span>
                   <div style={{ display: 'flex', gap: theme.spacing.xs }}>
-                    <Button variant="ghost" size="sm" leftIcon={<Edit2 size={14} />} />
+                    <Button variant="ghost" size="sm" leftIcon={<Edit2 size={14} />} onClick={() => handleEdit(movimento.id)} />
                     <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => handleDelete(movimento.id)} />
                   </div>
                 </div>

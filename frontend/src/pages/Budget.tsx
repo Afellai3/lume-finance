@@ -24,9 +24,8 @@ function Budget() {
   const fetchBudgets = async () => {
     setLoading(true);
     try {
-      // Get current month and year
       const now = new Date();
-      const mese = now.getMonth() + 1; // JavaScript months are 0-indexed
+      const mese = now.getMonth() + 1;
       const anno = now.getFullYear();
       
       const response = await fetch(`/api/budget/corrente?mese=${mese}&anno=${anno}`);
@@ -34,11 +33,11 @@ function Budget() {
         const data = await response.json();
         setBudgets(data);
       } else {
-        // If 422, it means no budgets exist for current month, show empty state
+        // Silent handling: no budgets exist for current month
         setBudgets([]);
       }
     } catch (error) {
-      console.error('Errore:', error);
+      // Silent error handling
       setBudgets([]);
     } finally {
       setLoading(false);
@@ -48,6 +47,11 @@ function Budget() {
   useEffect(() => {
     fetchBudgets();
   }, []);
+
+  const handleCreateBudget = () => {
+    alert('Funzionalità in arrivo: Crea Budget');
+    // TODO: Open modal/form to create new budget
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
@@ -71,7 +75,9 @@ function Budget() {
             {budgets.length} {budgets.length === 1 ? 'categoria' : 'categorie'} monitorate
           </p>
         </div>
-        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />}>Aggiungi Budget</Button>
+        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreateBudget}>
+          Aggiungi Budget
+        </Button>
       </div>
 
       {/* Global Summary */}
@@ -97,7 +103,9 @@ function Budget() {
             <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🎯</div>
             <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun budget impostato</h3>
             <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia a pianificare le tue spese mensili</p>
-            <Button variant="primary" leftIcon={<Plus size={16} />}>Crea Budget</Button>
+            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreateBudget}>
+              Crea Budget
+            </Button>
           </div>
         </Card>
       ) : (

@@ -40,6 +40,11 @@ function Obiettivi() {
     fetchObiettivi();
   }, []);
 
+  const handleCreateGoal = () => {
+    alert('Funzionalità in arrivo: Nuovo Obiettivo');
+    // TODO: Open modal/form
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
   };
@@ -59,7 +64,6 @@ function Obiettivi() {
   };
 
   const calculatePercentage = (current: number, target: number): number => {
-    // Safety check for division by zero or undefined values
     const safeCurrent = current ?? 0;
     const safeTarget = target ?? 0;
     
@@ -84,7 +88,9 @@ function Obiettivi() {
             {obiettiviAttivi.length} attivi • {obiettiviCompletati.length} completati
           </p>
         </div>
-        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />}>Nuovo Obiettivo</Button>
+        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreateGoal}>
+          Nuovo Obiettivo
+        </Button>
       </div>
 
       {/* Empty State */}
@@ -94,7 +100,9 @@ function Obiettivi() {
             <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🎯</div>
             <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun obiettivo impostato</h3>
             <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Definisci i tuoi traguardi finanziari</p>
-            <Button variant="primary" leftIcon={<Plus size={16} />}>Crea Obiettivo</Button>
+            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreateGoal}>
+              Crea Obiettivo
+            </Button>
           </div>
         </Card>
       ) : (

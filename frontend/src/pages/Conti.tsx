@@ -38,6 +38,11 @@ function Conti() {
     fetchConti();
   }, []);
 
+  const handleCreateAccount = () => {
+    alert('Funzionalità in arrivo: Nuovo Conto');
+    // TODO: Open modal/form
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
   };
@@ -60,7 +65,7 @@ function Conti() {
     }
   };
 
-  const totalBalance = conti.reduce((sum, c) => sum + c.saldo, 0);
+  const totalBalance = conti.reduce((sum, c) => sum + (c.saldo || 0), 0);
 
   if (loading) {
     return <div style={{ padding: theme.spacing.xl, textAlign: 'center', color: theme.colors.text.secondary }}>Caricamento...</div>;
@@ -76,7 +81,9 @@ function Conti() {
             {conti.length} {conti.length === 1 ? 'conto' : 'conti'} attivi
           </p>
         </div>
-        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />}>Nuovo Conto</Button>
+        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreateAccount}>
+          Nuovo Conto
+        </Button>
       </div>
 
       {/* Total Balance Card */}
@@ -101,7 +108,9 @@ function Conti() {
             <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🏛️</div>
             <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun conto configurato</h3>
             <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Aggiungi i tuoi conti bancari per iniziare</p>
-            <Button variant="primary" leftIcon={<Plus size={16} />}>Aggiungi Conto</Button>
+            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreateAccount}>
+              Aggiungi Conto
+            </Button>
           </div>
         </Card>
       ) : (

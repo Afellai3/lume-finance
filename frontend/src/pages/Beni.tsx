@@ -40,6 +40,11 @@ function Beni() {
     fetchBeni();
   }, []);
 
+  const handleCreateAsset = () => {
+    alert('Funzionalità in arrivo: Aggiungi Bene');
+    // TODO: Open modal/form
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
   };
@@ -57,8 +62,8 @@ function Beni() {
     }
   };
 
-  const totalValue = beni.reduce((sum, b) => sum + b.valore_corrente, 0);
-  const totalPurchase = beni.reduce((sum, b) => sum + b.valore_acquisto, 0);
+  const totalValue = beni.reduce((sum, b) => sum + (b.valore_corrente || 0), 0);
+  const totalPurchase = beni.reduce((sum, b) => sum + (b.valore_acquisto || 0), 0);
   const depreciation = totalPurchase > 0 ? ((totalPurchase - totalValue) / totalPurchase) * 100 : 0;
 
   if (loading) {
@@ -75,7 +80,9 @@ function Beni() {
             {beni.length} {beni.length === 1 ? 'bene' : 'beni'} registrati
           </p>
         </div>
-        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />}>Aggiungi Bene</Button>
+        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreateAsset}>
+          Aggiungi Bene
+        </Button>
       </div>
 
       {/* Summary Card */}
@@ -111,7 +118,9 @@ function Beni() {
             <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🚗</div>
             <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun bene registrato</h3>
             <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia a tracciare il tuo patrimonio</p>
-            <Button variant="primary" leftIcon={<Plus size={16} />}>Aggiungi Bene</Button>
+            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreateAsset}>
+              Aggiungi Bene
+            </Button>
           </div>
         </Card>
       ) : (
