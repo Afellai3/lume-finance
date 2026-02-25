@@ -41,6 +41,41 @@ function Dashboard() {
       const response = await fetch('/api/analytics/dashboard?');
       if (!response.ok) throw new Error('Errore caricamento dashboard');
       const dashboardData = await response.json();
+      
+      // Fetch obiettivi and movements to calculate actual amounts
+      try {
+        const [obiettiviRes, movimentiRes] = await Promise.all([
+          fetch('/api/obiettivi'),
+          fetch('/api/movimenti?per_page=1000')
+        ]);
+        
+        if (obiettiviRes.ok && movimentiRes.ok) {
+          const obiettivi = await obiettiviRes.json();
+          const movimentiData = await movimentiRes.json();
+          const movimenti = movimentiData.items || movimentiData || [];
+          
+          // Calculate importo_accumulato for each obiettivo
+          const obiettiviWithAmounts = obiettivi.map((obiettivo: any) => {
+            const importoCalcolato = movimenti
+              .filter((m: any) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata')
+              .reduce((sum: number, m: any) => sum + (m.importo || 0), 0);
+            
+            return {
+              ...obiettivo,
+              importo_accumulato: importoCalcolato,
+              importo_corrente: importoCalcolato,
+              importo_attuale: importoCalcolato,
+              target: obiettivo.importo_target
+            };
+          });
+          
+          dashboardData.obiettivi_risparmio = obiettiviWithAmounts;
+        }
+      } catch (err) {
+        console.error('Error fetching obiettivi:', err);
+        // Continue with dashboard data even if obiettivi fail
+      }
+      
       setData(dashboardData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore sconosciuto');
@@ -340,7 +375,7 @@ function Dashboard() {
         <Card header="Obiettivi di Risparmio" padding="lg">
           <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
             {data.obiettivi_risparmio.map((goal: any, index: number) => {
-              const currentValue = goal.importo_accumulato || goal.importo_corrente || 0;
+              const currentValue = goal.importo_accumulato || goal.importo_corrente || goal.importo_attuale || 0;
               const targetValue = goal.importo_target || goal.target || 1000;
               
               return (
