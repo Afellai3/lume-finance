@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from .routes import conti, movimenti, analytics, beni, budget, obiettivi, categorie
+from .routes import conti, movimenti, analytics, beni, budget, obiettivi, categorie, ricorrenze
 from .database import init_db
 
 app = FastAPI(
@@ -31,6 +31,7 @@ app.include_router(beni.router, prefix="/api")
 app.include_router(budget.router, prefix="/api")
 app.include_router(obiettivi.router, prefix="/api")
 app.include_router(categorie.router, prefix="/api")
+app.include_router(ricorrenze.router, prefix="/api")  # Sprint 4: Ricorrenze
 
 
 @app.get("/")
