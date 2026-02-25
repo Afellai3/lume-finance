@@ -17,6 +17,7 @@ class MovimentoCreate(BaseModel):
     tipo: str
     categoria_id: Optional[int] = None
     conto_id: Optional[int] = None
+    budget_id: Optional[int] = None
     descrizione: str
     ricorrente: bool = False
     # Campi per scomposizione costi
@@ -33,13 +34,14 @@ class MovimentoUpdate(BaseModel):
     tipo: Optional[str] = None
     categoria_id: Optional[int] = None
     conto_id: Optional[int] = None
+    budget_id: Optional[int] = None
     descrizione: Optional[str] = None
     ricorrente: Optional[bool] = None
 
 
 @router.get("")
 async def list_movimenti(limit: int = 100):
-    """Lista tutti i movimenti con dettagli categoria e conto"""
+    """Lista tutti i movimenti con dettagli categoria, conto e budget"""
     with get_db_connection() as conn:
         cursor = conn.execute(
             """
@@ -50,11 +52,16 @@ async def list_movimenti(limit: int = 100):
                 c.colore as categoria_colore,
                 co.nome as conto_nome,
                 b.nome as bene_nome,
-                b.tipo as bene_tipo
+                b.tipo as bene_tipo,
+                bg.id as budget_id,
+                cat_bg.nome as budget_categoria_nome,
+                cat_bg.icona as budget_categoria_icona
             FROM movimenti m
             LEFT JOIN categorie c ON m.categoria_id = c.id
             LEFT JOIN conti co ON m.conto_id = co.id
             LEFT JOIN beni b ON m.bene_id = b.id
+            LEFT JOIN budget bg ON m.budget_id = bg.id
+            LEFT JOIN categorie cat_bg ON bg.categoria_id = cat_bg.id
             ORDER BY m.data DESC
             LIMIT ?
             """,
@@ -91,11 +98,15 @@ async def get_movimento(movimento_id: int):
                 c.icona as categoria_icona,
                 co.nome as conto_nome,
                 b.nome as bene_nome,
-                b.tipo as bene_tipo
+                b.tipo as bene_tipo,
+                bg.id as budget_id,
+                cat_bg.nome as budget_categoria_nome
             FROM movimenti m
             LEFT JOIN categorie c ON m.categoria_id = c.id
             LEFT JOIN conti co ON m.conto_id = co.id
             LEFT JOIN beni b ON m.bene_id = b.id
+            LEFT JOIN budget bg ON m.budget_id = bg.id
+            LEFT JOIN categorie cat_bg ON bg.categoria_id = cat_bg.id
             WHERE m.id = ?
             """,
             (movimento_id,)
@@ -146,6 +157,23 @@ async def create_movimento(movimento: MovimentoCreate):
     """Crea un nuovo movimento con scomposizione automatica se collegato a bene"""
     
     with get_db_connection() as conn:
+        # Verifica budget se specificato
+        if movimento.budget_id:
+            cursor = conn.execute(
+                "SELECT id, attivo FROM budget WHERE id = ?",
+                (movimento.budget_id,)
+            )
+            budget_row = cursor.fetchone()
+            
+            if not budget_row:
+                raise HTTPException(status_code=404, detail="Budget non trovato")
+            
+            if not budget_row[1]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Il budget selezionato non è attivo"
+                )
+        
         scomposizione_data = None
         
         # Se collegato a bene, calcola scomposizione
@@ -200,9 +228,9 @@ async def create_movimento(movimento: MovimentoCreate):
         cursor = conn.execute(
             """
             INSERT INTO movimenti 
-            (data, importo, tipo, categoria_id, conto_id, descrizione, ricorrente, 
+            (data, importo, tipo, categoria_id, conto_id, budget_id, descrizione, ricorrente, 
              bene_id, km_percorsi, ore_utilizzo, scomposizione_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 movimento.data,
@@ -210,6 +238,7 @@ async def create_movimento(movimento: MovimentoCreate):
                 movimento.tipo,
                 movimento.categoria_id,
                 movimento.conto_id,
+                movimento.budget_id,
                 movimento.descrizione,
                 movimento.ricorrente,
                 movimento.bene_id,
@@ -261,6 +290,23 @@ async def update_movimento(movimento_id: int, movimento: MovimentoUpdate):
         
         old_importo, old_tipo, old_conto_id = existing
         
+        # Verifica budget se specificato
+        if movimento.budget_id:
+            cursor = conn.execute(
+                "SELECT id, attivo FROM budget WHERE id = ?",
+                (movimento.budget_id,)
+            )
+            budget_row = cursor.fetchone()
+            
+            if not budget_row:
+                raise HTTPException(status_code=404, detail="Budget non trovato")
+            
+            if not budget_row[1]:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Il budget selezionato non è attivo"
+                )
+        
         # Costruisci query update dinamica
         updates = []
         params = []
@@ -284,6 +330,10 @@ async def update_movimento(movimento_id: int, movimento: MovimentoUpdate):
         if movimento.conto_id is not None:
             updates.append("conto_id = ?")
             params.append(movimento.conto_id)
+        
+        if movimento.budget_id is not None:
+            updates.append("budget_id = ?")
+            params.append(movimento.budget_id)
         
         if movimento.descrizione is not None:
             updates.append("descrizione = ?")
