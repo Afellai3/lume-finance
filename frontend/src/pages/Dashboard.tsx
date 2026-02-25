@@ -81,7 +81,7 @@ function Dashboard() {
   if (!data) return null;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
   };
 
   // Styles
@@ -257,7 +257,7 @@ function Dashboard() {
       </div>
 
       {/* Category Spending Chart */}
-      {data.spese_per_categoria.length > 0 && (
+      {data.spese_per_categoria && data.spese_per_categoria.length > 0 && (
         <Card header="Spese per Categoria" padding="lg">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.spese_per_categoria}>
@@ -279,7 +279,7 @@ function Dashboard() {
       )}
 
       {/* Recent Movements */}
-      {data.ultimi_movimenti.length > 0 && (
+      {data.ultimi_movimenti && data.ultimi_movimenti.length > 0 && (
         <Card header="Ultimi Movimenti" padding="md">
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             {data.ultimi_movimenti.slice(0, 5).map((movimento: any, index: number) => (
@@ -308,10 +308,10 @@ function Dashboard() {
                   </div>
                   <div>
                     <p style={{ margin: 0, fontWeight: theme.typography.fontWeight.medium, color: theme.colors.text.primary }}>
-                      {movimento.descrizione}
+                      {movimento.descrizione || 'Movimento'}
                     </p>
                     <p style={{ margin: 0, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                      {new Date(movimento.data).toLocaleDateString('it-IT')}
+                      {movimento.data ? new Date(movimento.data).toLocaleDateString('it-IT') : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -321,7 +321,7 @@ function Dashboard() {
                     fontWeight: theme.typography.fontWeight.semibold,
                     color: movimento.tipo === 'entrata' ? theme.colors.success : theme.colors.danger
                   }}>
-                    {movimento.tipo === 'entrata' ? '+' : '-'}{formatCurrency(Math.abs(movimento.importo))}
+                    {movimento.tipo === 'entrata' ? '+' : '-'}{formatCurrency(Math.abs(movimento.importo || 0))}
                   </p>
                   {movimento.categoria && (
                     <Badge category={movimento.categoria} size="sm" style={{ marginTop: theme.spacing.xs }}>
@@ -336,20 +336,25 @@ function Dashboard() {
       )}
 
       {/* Savings Goals */}
-      {data.obiettivi_risparmio.length > 0 && (
+      {data.obiettivi_risparmio && data.obiettivi_risparmio.length > 0 && (
         <Card header="Obiettivi di Risparmio" padding="lg">
           <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
-            {data.obiettivi_risparmio.map((goal: any, index: number) => (
-              <div key={index}>
-                <ProgressBar
-                  value={goal.importo_accumulato}
-                  max={goal.importo_target}
-                  label={goal.nome}
-                  showLabel
-                  variant="default"
-                />
-              </div>
-            ))}
+            {data.obiettivi_risparmio.map((goal: any, index: number) => {
+              const currentValue = goal.importo_accumulato || goal.importo_corrente || 0;
+              const targetValue = goal.importo_target || goal.target || 1000;
+              
+              return (
+                <div key={index}>
+                  <ProgressBar
+                    value={currentValue}
+                    max={targetValue}
+                    label={goal.nome || 'Obiettivo'}
+                    showLabel
+                    variant="default"
+                  />
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}
