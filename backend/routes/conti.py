@@ -17,7 +17,7 @@ async def lista_conti(attivi_solo: bool = True):
         query = "SELECT * FROM conti"
         if attivi_solo:
             query += " WHERE attivo = 1"
-        query += " ORDER BY creato_il DESC"
+        query += " ORDER BY data_creazione DESC"
         
         cursor = conn.execute(query)
         rows = cursor.fetchall()
@@ -54,6 +54,7 @@ async def crea_conto(conto: Conto):
              conto.descrizione, conto.attivo)
         )
         
+        conn.commit()  # FIX: Aggiungi commit
         conto_id = cursor.lastrowid
         
         # Recupera il conto creato
@@ -87,6 +88,8 @@ async def aggiorna_conto(conto_id: int, conto: Conto):
              conto.descrizione, conto.attivo, conto_id)
         )
         
+        conn.commit()  # FIX: Aggiungi commit
+        
         # Recupera aggiornato
         cursor = conn.execute("SELECT * FROM conti WHERE id = ?", (conto_id,))
         row = cursor.fetchone()
@@ -107,6 +110,7 @@ async def elimina_conto(conto_id: int):
         
         # Soft delete
         conn.execute("UPDATE conti SET attivo = 0 WHERE id = ?", (conto_id,))
+        conn.commit()  # FIX: Aggiungi commit
 
 
 @router.get("/{conto_id}/saldo")
