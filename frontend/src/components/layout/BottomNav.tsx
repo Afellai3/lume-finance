@@ -5,7 +5,8 @@ import {
   Wallet, 
   Car, 
   Target, 
-  PiggyBank 
+  PiggyBank,
+  Building2
 } from 'lucide-react';
 import { theme } from '../../styles/theme';
 
@@ -20,6 +21,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onPageChange 
   const menuItems = [
     { id: 'dashboard' as Page, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'movimenti' as Page, icon: ArrowLeftRight, label: 'Movimenti' },
+    { id: 'conti' as Page, icon: Building2, label: 'Conti' },
     { id: 'budget' as Page, icon: Wallet, label: 'Budget' },
     { id: 'obiettivi' as Page, icon: Target, label: 'Obiettivi' },
     { id: 'beni' as Page, icon: Car, label: 'Beni' },
