@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { theme, getCategoryColor } from '../styles/theme';
+import MovimentoForm from '../components/forms/MovimentoForm';
 
 interface Movimento {
   id: number;
@@ -48,6 +49,8 @@ function Movimenti() {
   const [conti, setConti] = useState<Conto[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingMovimento, setEditingMovimento] = useState<Movimento | null>(null);
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -85,18 +88,27 @@ function Movimenti() {
   }, []);
 
   const handleCreate = () => {
-    alert('Funzionalità in arrivo: Nuovo Movimento');
-    // TODO: Open modal/form
+    setEditingMovimento(null);
+    setShowForm(true);
   };
 
-  const handleEdit = (id: number) => {
-    alert(`Funzionalità in arrivo: Modifica movimento #${id}`);
-    // TODO: Open modal/form with movimento data
+  const handleEdit = (movimento: Movimento) => {
+    setEditingMovimento(movimento);
+    setShowForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingMovimento(null);
+  };
+
+  const handleFormSuccess = () => {
+    handleFormClose();
+    fetchData();
   };
 
   const handleExport = () => {
     alert('Funzionalità in arrivo: Esporta CSV');
-    // TODO: Implement CSV export
   };
 
   const filteredMovimenti = movimenti.filter(m => {
@@ -129,26 +141,6 @@ function Movimenti() {
     }
   };
 
-  const containerStyles: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: theme.spacing.lg,
-  };
-
-  const headerStyles: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: theme.spacing.md,
-    flexWrap: 'wrap',
-  };
-
-  const actionsStyles: React.CSSProperties = {
-    display: 'flex',
-    gap: theme.spacing.sm,
-    flexWrap: 'wrap',
-  };
-
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: theme.spacing['2xl'] }}>
@@ -158,191 +150,140 @@ function Movimenti() {
   }
 
   return (
-    <div style={containerStyles}>
-      {/* Header with Actions */}
-      <div style={headerStyles}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary }}>
-            Movimenti
-          </h2>
-          <p style={{ margin: `${theme.spacing.xs} 0 0 0`, color: theme.colors.text.secondary, fontSize: theme.typography.fontSize.sm }}>
-            {filteredMovimenti.length} {filteredMovimenti.length === 1 ? 'movimento' : 'movimenti'}
-          </p>
-        </div>
-        <div style={actionsStyles}>
-          <Button variant="secondary" size="sm" leftIcon={<Download size={16} />} onClick={handleExport}>
-            Esporta
-          </Button>
-          <Button 
-            variant={showFilters ? 'primary' : 'secondary'} 
-            size="sm" 
-            leftIcon={<Filter size={16} />}
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            Filtri {activeFiltersCount > 0 && `(${activeFiltersCount})`}
-          </Button>
-          <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreate}>
-            Nuovo
-          </Button>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <Input
-        placeholder="Cerca movimenti..."
-        value={filters.search}
-        onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-        leftIcon={<Search size={18} />}
-        fullWidth
-      />
-
-      {/* Filter Chips */}
-      {activeFiltersCount > 0 && (
-        <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap', alignItems: 'center' }}>
-          <span style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>Filtri attivi:</span>
-          {filters.tipo && (
-            <Badge variant={filters.tipo === 'entrata' ? 'success' : 'danger'}>
-              {filters.tipo === 'entrata' ? 'Entrate' : 'Uscite'}
-              <X 
-                size={14} 
-                style={{ marginLeft: theme.spacing.xs, cursor: 'pointer' }} 
-                onClick={() => setFilters({ ...filters, tipo: '' })}
-              />
-            </Badge>
-          )}
-          {filters.categoria_id && (
-            <Badge variant="info">
-              {categorie.find(c => c.id.toString() === filters.categoria_id)?.nome || 'Categoria'}
-              <X 
-                size={14} 
-                style={{ marginLeft: theme.spacing.xs, cursor: 'pointer' }} 
-                onClick={() => setFilters({ ...filters, categoria_id: '' })}
-              />
-            </Badge>
-          )}
-          {(filters.data_da || filters.data_a) && (
-            <Badge variant="neutral">
-              <Calendar size={12} style={{ marginRight: theme.spacing.xs }} />
-              {filters.data_da && formatDate(filters.data_da)}
-              {filters.data_da && filters.data_a && ' - '}
-              {filters.data_a && formatDate(filters.data_a)}
-              <X 
-                size={14} 
-                style={{ marginLeft: theme.spacing.xs, cursor: 'pointer' }} 
-                onClick={() => setFilters({ ...filters, data_da: '', data_a: '' })}
-              />
-            </Badge>
-          )}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => setFilters({ search: filters.search, tipo: '', categoria_id: '', conto_id: '', data_da: '', data_a: '' })}
-          >
-            Rimuovi tutti
-          </Button>
-        </div>
-      )}
-
-      {/* Filters Panel */}
-      {showFilters && (
-        <Card padding="lg">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: theme.spacing.md }}>
-            <div>
-              <label style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, display: 'block', marginBottom: theme.spacing.xs }}>Tipo</label>
-              <select 
-                value={filters.tipo} 
-                onChange={(e) => setFilters({ ...filters, tipo: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: theme.spacing.sm,
-                  borderRadius: theme.borderRadius.md,
-                  border: `1px solid ${theme.colors.border.light}`,
-                  fontSize: theme.typography.fontSize.sm
-                }}
-              >
-                <option value="">Tutti</option>
-                <option value="entrata">Entrate</option>
-                <option value="uscita">Uscite</option>
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, display: 'block', marginBottom: theme.spacing.xs }}>Data da</label>
-              <Input type="date" value={filters.data_da} onChange={(e) => setFilters({ ...filters, data_da: e.target.value })} fullWidth />
-            </div>
-            <div>
-              <label style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, display: 'block', marginBottom: theme.spacing.xs }}>Data a</label>
-              <Input type="date" value={filters.data_a} onChange={(e) => setFilters({ ...filters, data_a: e.target.value })} fullWidth />
-            </div>
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+        {/* Header with Actions */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: theme.spacing.md, flexWrap: 'wrap' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary }}>Movimenti</h2>
+            <p style={{ margin: `${theme.spacing.xs} 0 0 0`, color: theme.colors.text.secondary, fontSize: theme.typography.fontSize.sm }}>
+              {filteredMovimenti.length} {filteredMovimenti.length === 1 ? 'movimento' : 'movimenti'}
+            </p>
           </div>
-        </Card>
-      )}
-
-      {/* Movements List */}
-      {filteredMovimenti.length === 0 ? (
-        <Card padding="xl">
-          <div style={{ textAlign: 'center', padding: theme.spacing['2xl'] }}>
-            <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>💸</div>
-            <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun movimento trovato</h3>
-            <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia aggiungendo il tuo primo movimento</p>
-            <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreate}>Aggiungi Movimento</Button>
+          <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+            <Button variant="secondary" size="sm" leftIcon={<Download size={16} />} onClick={handleExport}>Esporta</Button>
+            <Button variant={showFilters ? 'primary' : 'secondary'} size="sm" leftIcon={<Filter size={16} />} onClick={() => setShowFilters(!showFilters)}>
+              Filtri {activeFiltersCount > 0 && `(${activeFiltersCount})`}
+            </Button>
+            <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreate}>Nuovo</Button>
           </div>
-        </Card>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
-          {filteredMovimenti.map((movimento) => (
-            <Card key={movimento.id} hoverable padding="md">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: theme.spacing.md }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md, flex: 1 }}>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: theme.borderRadius.full,
-                    backgroundColor: `${getCategoryColor(movimento.categoria_nome || 'altro')}20`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: theme.typography.fontSize['2xl']
-                  }}>
-                    {movimento.icona || (movimento.tipo === 'entrata' ? '⬆️' : '⬇️')}
+        </div>
+
+        {/* Search Bar */}
+        <Input
+          placeholder="Cerca movimenti..."
+          value={filters.search}
+          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+          leftIcon={<Search size={18} />}
+          fullWidth
+        />
+
+        {/* Filter Chips */}
+        {activeFiltersCount > 0 && (
+          <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>Filtri attivi:</span>
+            {filters.tipo && (
+              <Badge variant={filters.tipo === 'entrata' ? 'success' : 'danger'}>
+                {filters.tipo === 'entrata' ? 'Entrate' : 'Uscite'}
+                <X size={14} style={{ marginLeft: theme.spacing.xs, cursor: 'pointer' }} onClick={() => setFilters({ ...filters, tipo: '' })} />
+              </Badge>
+            )}
+            {filters.categoria_id && (
+              <Badge variant="info">
+                {categorie.find(c => c.id.toString() === filters.categoria_id)?.nome || 'Categoria'}
+                <X size={14} style={{ marginLeft: theme.spacing.xs, cursor: 'pointer' }} onClick={() => setFilters({ ...filters, categoria_id: '' })} />
+              </Badge>
+            )}
+            {(filters.data_da || filters.data_a) && (
+              <Badge variant="neutral">
+                <Calendar size={12} style={{ marginRight: theme.spacing.xs }} />
+                {filters.data_da && formatDate(filters.data_da)}{filters.data_da && filters.data_a && ' - '}{filters.data_a && formatDate(filters.data_a)}
+                <X size={14} style={{ marginLeft: theme.spacing.xs, cursor: 'pointer' }} onClick={() => setFilters({ ...filters, data_da: '', data_a: '' })} />
+              </Badge>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => setFilters({ search: filters.search, tipo: '', categoria_id: '', conto_id: '', data_da: '', data_a: '' })}>
+              Rimuovi tutti
+            </Button>
+          </div>
+        )}
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <Card padding="lg">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: theme.spacing.md }}>
+              <div>
+                <label style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, display: 'block', marginBottom: theme.spacing.xs }}>Tipo</label>
+                <select value={filters.tipo} onChange={(e) => setFilters({ ...filters, tipo: e.target.value })} style={{ width: '100%', padding: theme.spacing.sm, borderRadius: theme.borderRadius.md, border: `1px solid ${theme.colors.border.light}`, fontSize: theme.typography.fontSize.sm }}>
+                  <option value="">Tutti</option>
+                  <option value="entrata">Entrate</option>
+                  <option value="uscita">Uscite</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, display: 'block', marginBottom: theme.spacing.xs }}>Data da</label>
+                <Input type="date" value={filters.data_da} onChange={(e) => setFilters({ ...filters, data_da: e.target.value })} fullWidth />
+              </div>
+              <div>
+                <label style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, display: 'block', marginBottom: theme.spacing.xs }}>Data a</label>
+                <Input type="date" value={filters.data_a} onChange={(e) => setFilters({ ...filters, data_a: e.target.value })} fullWidth />
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Movements List */}
+        {filteredMovimenti.length === 0 ? (
+          <Card padding="xl">
+            <div style={{ textAlign: 'center', padding: theme.spacing['2xl'] }}>
+              <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>💸</div>
+              <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun movimento trovato</h3>
+              <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia aggiungendo il tuo primo movimento</p>
+              <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreate}>Aggiungi Movimento</Button>
+            </div>
+          </Card>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.sm }}>
+            {filteredMovimenti.map((movimento) => (
+              <Card key={movimento.id} hoverable padding="md">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: theme.spacing.md }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md, flex: 1 }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: theme.borderRadius.full, backgroundColor: `${getCategoryColor(movimento.categoria_nome || 'altro')}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: theme.typography.fontSize['2xl'] }}>
+                      {movimento.icona || (movimento.tipo === 'entrata' ? '⬆️' : '⬇️')}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: 0, fontSize: theme.typography.fontSize.base, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary }}>{movimento.descrizione}</h4>
+                      <div style={{ display: 'flex', gap: theme.spacing.sm, marginTop: theme.spacing.xs, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>{formatDate(movimento.data)}</span>
+                        {movimento.categoria_nome && <Badge category={movimento.categoria_nome} size="sm">{movimento.categoria_nome}</Badge>}
+                        {movimento.conto_nome && <span style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary }}>• {movimento.conto_nome}</span>}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: 0, fontSize: theme.typography.fontSize.base, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary }}>
-                      {movimento.descrizione}
-                    </h4>
-                    <div style={{ display: 'flex', gap: theme.spacing.sm, marginTop: theme.spacing.xs, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                        {formatDate(movimento.data)}
-                      </span>
-                      {movimento.categoria_nome && (
-                        <Badge category={movimento.categoria_nome} size="sm">{movimento.categoria_nome}</Badge>
-                      )}
-                      {movimento.conto_nome && (
-                        <span style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary }}>
-                          • {movimento.conto_nome}
-                        </span>
-                      )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+                    <span style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.bold, color: movimento.tipo === 'entrata' ? theme.colors.success : theme.colors.danger }}>
+                      {movimento.tipo === 'entrata' ? '+' : '-'}{formatCurrency(Math.abs(movimento.importo))}
+                    </span>
+                    <div style={{ display: 'flex', gap: theme.spacing.xs }}>
+                      <Button variant="ghost" size="sm" leftIcon={<Edit2 size={14} />} onClick={() => handleEdit(movimento)} />
+                      <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => handleDelete(movimento.id)} />
                     </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
-                  <span style={{
-                    fontSize: theme.typography.fontSize.lg,
-                    fontWeight: theme.typography.fontWeight.bold,
-                    color: movimento.tipo === 'entrata' ? theme.colors.success : theme.colors.danger
-                  }}>
-                    {movimento.tipo === 'entrata' ? '+' : '-'}{formatCurrency(Math.abs(movimento.importo))}
-                  </span>
-                  <div style={{ display: 'flex', gap: theme.spacing.xs }}>
-                    <Button variant="ghost" size="sm" leftIcon={<Edit2 size={14} />} onClick={() => handleEdit(movimento.id)} />
-                    <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => handleDelete(movimento.id)} />
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Form Modal */}
+      {showForm && (
+        <MovimentoForm
+          movimento={editingMovimento}
+          onClose={handleFormClose}
+          onSuccess={handleFormSuccess}
+        />
       )}
-    </div>
+    </>
   );
 }
 
