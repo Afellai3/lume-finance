@@ -34,9 +34,17 @@ export const Layout: React.FC<LayoutProps> = ({
     margin: '0 auto',
   };
 
+  const handleLogoClick = () => {
+    onPageChange('dashboard');
+  };
+
   return (
     <div style={containerStyles}>
-      <Header title={pageTitle} subtitle={pageSubtitle} />
+      <Header 
+        title={pageTitle} 
+        subtitle={pageSubtitle} 
+        onLogoClick={handleLogoClick}
+      />
       <main style={mainStyles}>
         {children}
       </main>
