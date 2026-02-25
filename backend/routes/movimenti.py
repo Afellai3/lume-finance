@@ -1,6 +1,6 @@
 """API endpoints per gestione movimenti"""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from datetime import datetime
 from pydantic import BaseModel
@@ -40,11 +40,32 @@ class MovimentoUpdate(BaseModel):
 
 
 @router.get("")
-async def list_movimenti(limit: int = 100):
-    """Lista tutti i movimenti con dettagli categoria, conto e budget"""
+async def list_movimenti(
+    page: int = Query(1, ge=1, description="Numero pagina (parte da 1)"),
+    per_page: int = Query(50, ge=1, le=100, description="Elementi per pagina (max 100)"),
+    order_by: Optional[str] = Query(None, description="Campo ordinamento: data, importo, categoria"),
+    order_dir: Optional[str] = Query("desc", description="Direzione: asc o desc")
+):
+    """Lista movimenti con paginazione e ordinamento"""
     with get_db_connection() as conn:
+        # Conteggio totale
+        cursor = conn.execute("SELECT COUNT(*) FROM movimenti")
+        total = cursor.fetchone()[0]
+        
+        # Calcola offset
+        offset = (page - 1) * per_page
+        
+        # Costruisci ORDER BY
+        order_clause = "m.data DESC"  # Default
+        if order_by == "data":
+            order_clause = f"m.data {order_dir.upper()}"
+        elif order_by == "importo":
+            order_clause = f"m.importo {order_dir.upper()}"
+        elif order_by == "categoria":
+            order_clause = f"c.nome {order_dir.upper()}"
+        
         cursor = conn.execute(
-            """
+            f"""
             SELECT 
                 m.*,
                 c.nome as categoria_nome,
@@ -62,13 +83,91 @@ async def list_movimenti(limit: int = 100):
             LEFT JOIN beni b ON m.bene_id = b.id
             LEFT JOIN budget bg ON m.budget_id = bg.id
             LEFT JOIN categorie cat_bg ON bg.categoria_id = cat_bg.id
-            ORDER BY m.data DESC
-            LIMIT ?
+            ORDER BY {order_clause}
+            LIMIT ? OFFSET ?
             """,
-            (limit,)
+            (per_page, offset)
         )
         
-        return [dict_from_row(row) for row in cursor.fetchall()]
+        items = [dict_from_row(row) for row in cursor.fetchall()]
+        
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": (total + per_page - 1) // per_page
+        }
+
+
+@router.get("/export")
+async def export_movimenti_csv():
+    """Esporta tutti i movimenti in formato CSV"""
+    from fastapi.responses import StreamingResponse
+    import io
+    import csv
+    
+    with get_db_connection() as conn:
+        cursor = conn.execute(
+            """
+            SELECT 
+                m.id,
+                m.data,
+                m.tipo,
+                m.importo,
+                c.nome as categoria,
+                co.nome as conto,
+                m.descrizione,
+                m.ricorrente,
+                b.nome as bene,
+                m.km_percorsi,
+                m.ore_utilizzo
+            FROM movimenti m
+            LEFT JOIN categorie c ON m.categoria_id = c.id
+            LEFT JOIN conti co ON m.conto_id = co.id
+            LEFT JOIN beni b ON m.bene_id = b.id
+            ORDER BY m.data DESC
+            """
+        )
+        
+        rows = cursor.fetchall()
+        
+        # Crea CSV in memoria
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow([
+            'ID', 'Data', 'Tipo', 'Importo (€)', 'Categoria', 
+            'Conto', 'Descrizione', 'Ricorrente', 'Bene', 
+            'Km Percorsi', 'Ore Utilizzo'
+        ])
+        
+        # Dati
+        for row in rows:
+            writer.writerow([
+                row[0],  # id
+                row[1],  # data
+                row[2].capitalize(),  # tipo
+                f"{row[3]:.2f}",  # importo
+                row[4] or '',  # categoria
+                row[5] or '',  # conto
+                row[6],  # descrizione
+                'Sì' if row[7] else 'No',  # ricorrente
+                row[8] or '',  # bene
+                f"{row[9]:.1f}" if row[9] else '',  # km
+                f"{row[10]:.1f}" if row[10] else ''  # ore
+            ])
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=movimenti_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            }
+        )
 
 
 @router.get("/categorie")
