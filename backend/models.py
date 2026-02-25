@@ -45,6 +45,12 @@ class FrequenzaRicorrenza(str, Enum):
     ANNUALE = "annuale"
 
 
+class TipoCategoria(str, Enum):
+    """Tipo di categoria"""
+    ENTRATA = "entrata"
+    USCITA = "uscita"
+
+
 class Movimento(BaseModel):
     """Modello movimento finanziario"""
     id: Optional[int] = None
@@ -141,15 +147,27 @@ class Conto(BaseModel):
 
 
 class Categoria(BaseModel):
-    """Modello categoria entrata/uscita"""
+    """Modello categoria entrata/uscita personalizzabile"""
     id: Optional[int] = None
-    nome: str
-    tipo: str  # entrata, uscita
+    nome: str = Field(min_length=2, max_length=50, description="Nome categoria")
+    tipo: TipoCategoria
     categoria_padre_id: Optional[int] = None
-    icona: Optional[str] = None
-    colore: Optional[str] = None
+    icona: Optional[str] = Field(None, max_length=10, description="Emoji o icona")
+    colore: Optional[str] = Field(None, pattern=r'^#[0-9A-Fa-f]{6}$', description="Colore esadecimale")
     descrizione: Optional[str] = None
+    is_system: bool = False  # Categorie di sistema non modificabili
     creato_il: Optional[datetime] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "nome": "Hobby",
+                "tipo": "uscita",
+                "icona": "🎮",
+                "colore": "#9333EA",
+                "descrizione": "Spese per hobby e tempo libero"
+            }
+        }
 
 
 class Budget(BaseModel):
