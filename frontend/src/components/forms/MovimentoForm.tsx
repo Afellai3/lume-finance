@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import './MovimentoForm.css'
+import { useState, useEffect } from 'react';
+import './MovimentoForm.css';
 
 interface Categoria {
   id: number;
@@ -38,10 +38,10 @@ interface MovimentoFormProps {
 }
 
 function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
-  const [categorie, setCategorie] = useState<Categoria[]>([])
-  const [conti, setConti] = useState<Conto[]>([])
-  const [beni, setBeni] = useState<Bene[]>([])
-  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [categorie, setCategorie] = useState<Categoria[]>([]);
+  const [conti, setConti] = useState<Conto[]>([]);
+  const [beni, setBeni] = useState<Bene[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   
   const [formData, setFormData] = useState({
     data: movimento?.data.split('T')[0] || new Date().toISOString().split('T')[0],
@@ -57,79 +57,79 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
     prezzo_carburante_al_litro: '',
     ore_utilizzo: movimento?.ore_utilizzo?.toString() || '',
     tariffa_kwh: '0.25'
-  })
+  });
   
-  const [submitting, setSubmitting] = useState(false)
-  const [beneSelezionato, setBeneSelezionato] = useState<Bene | null>(null)
+  const [submitting, setSubmitting] = useState(false);
+  const [beneSelezionato, setBeneSelezionato] = useState<Bene | null>(null);
 
   useEffect(() => {
-    fetchCategorie()
-    fetchConti()
-    fetchBeni()
-    fetchBudgets()
-  }, [])
+    fetchCategorie();
+    fetchConti();
+    fetchBeni();
+    fetchBudgets();
+  }, []);
 
   useEffect(() => {
     if (formData.bene_id) {
-      const bene = beni.find(b => b.id === parseInt(formData.bene_id))
-      setBeneSelezionato(bene || null)
+      const bene = beni.find(b => b.id === parseInt(formData.bene_id));
+      setBeneSelezionato(bene || null);
     } else {
-      setBeneSelezionato(null)
+      setBeneSelezionato(null);
     }
-  }, [formData.bene_id, beni])
+  }, [formData.bene_id, beni]);
 
   const fetchCategorie = async () => {
     try {
-      const response = await fetch('/api/movimenti/categorie')
+      const response = await fetch('/api/movimenti/categorie');
       if (response.ok) {
-        const data = await response.json()
-        setCategorie(data)
+        const data = await response.json();
+        setCategorie(data);
       }
     } catch (error) {
-      console.error('Errore caricamento categorie:', error)
+      console.error('Errore caricamento categorie:', error);
     }
-  }
+  };
 
   const fetchConti = async () => {
     try {
-      const response = await fetch('/api/conti')
+      const response = await fetch('/api/conti');
       if (response.ok) {
-        const data = await response.json()
-        setConti(data.filter((c: Conto) => c.attivo))
+        const data = await response.json();
+        setConti(data.filter((c: Conto) => c.attivo));
       }
     } catch (error) {
-      console.error('Errore caricamento conti:', error)
+      console.error('Errore caricamento conti:', error);
     }
-  }
+  };
 
   const fetchBeni = async () => {
     try {
-      const response = await fetch('/api/beni')
+      const response = await fetch('/api/beni');
       if (response.ok) {
-        const data = await response.json()
-        setBeni(data)
+        const data = await response.json();
+        setBeni(data);
       }
     } catch (error) {
-      console.error('Errore caricamento beni:', error)
+      console.error('Errore caricamento beni:', error);
     }
-  }
+  };
 
   const fetchBudgets = async () => {
     try {
-      const response = await fetch('/api/budget')
+      const response = await fetch('/api/budget');
       if (response.ok) {
-        const data = await response.json()
-        const budgetsAttivi = data.budget?.filter((b: Budget) => b.attivo !== false) || []
-        setBudgets(budgetsAttivi)
+        const data = await response.json();
+        const budgetsAttivi = data.budget?.filter((b: Budget) => b.attivo !== false) || [];
+        setBudgets(budgetsAttivi);
       }
     } catch (error) {
-      console.error('Errore caricamento budget:', error)
+      console.error('Errore caricamento budget:', error);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setSubmitting(true)
+    e.preventDefault();
+    setSubmitting(true);
 
     try {
       const payload: any = {
@@ -141,69 +141,72 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
         budget_id: formData.budget_id ? parseInt(formData.budget_id) : null,
         descrizione: formData.descrizione,
         ricorrente: formData.ricorrente
-      }
+      };
 
       if (formData.bene_id) {
-        payload.bene_id = parseInt(formData.bene_id)
+        payload.bene_id = parseInt(formData.bene_id);
         
         if (beneSelezionato?.tipo === 'veicolo' && formData.km_percorsi) {
-          payload.km_percorsi = parseFloat(formData.km_percorsi)
+          payload.km_percorsi = parseFloat(formData.km_percorsi);
           if (formData.prezzo_carburante_al_litro) {
-            payload.prezzo_carburante_al_litro = parseFloat(formData.prezzo_carburante_al_litro)
+            payload.prezzo_carburante_al_litro = parseFloat(formData.prezzo_carburante_al_litro);
           }
         } else if (beneSelezionato?.tipo === 'elettrodomestico' && formData.ore_utilizzo) {
-          payload.ore_utilizzo = parseFloat(formData.ore_utilizzo)
-          payload.tariffa_kwh = parseFloat(formData.tariffa_kwh)
+          payload.ore_utilizzo = parseFloat(formData.ore_utilizzo);
+          payload.tariffa_kwh = parseFloat(formData.tariffa_kwh);
         }
       }
 
-      const url = movimento ? `/api/movimenti/${movimento.id}` : '/api/movimenti'
-      const method = movimento ? 'PUT' : 'POST'
+      const url = movimento ? `/api/movimenti/${movimento.id}` : '/api/movimenti';
+      const method = movimento ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      })
+      });
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Errore salvataggio')
+        const error = await response.json();
+        throw new Error(error.detail || 'Errore salvataggio');
       }
 
-      const result = await response.json()
+      const result = await response.json();
       
       if (result.scomposizione) {
-        mostraScomposizione(result.scomposizione)
+        mostraScomposizione(result.scomposizione);
       }
 
-      onSuccess()
+      onSuccess();
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Errore durante il salvataggio')
+      alert(error instanceof Error ? error.message : 'Errore durante il salvataggio');
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const mostraScomposizione = (scomposizione: any) => {
     const dettagli = [
       `💵 Totale: ${scomposizione.costo_totale.toFixed(2)}€`,
       '',
       '🔍 Scomposizione:'
-    ]
+    ];
 
-    scomposizione.componenti.forEach((comp: any) => {
-      dettagli.push(`  • ${comp.voce}: ${comp.importo.toFixed(2)}€`)
-      if (comp.dettagli) {
-        dettagli.push(`    ${comp.dettagli}`)
-      }
-    })
+    // FIX: Check if componenti exists and is an array
+    if (scomposizione.componenti && Array.isArray(scomposizione.componenti)) {
+      scomposizione.componenti.forEach((comp: any) => {
+        dettagli.push(`  • ${comp.voce}: ${comp.importo.toFixed(2)}€`);
+        if (comp.dettagli) {
+          dettagli.push(`    ${comp.dettagli}`);
+        }
+      });
+    }
 
-    alert(dettagli.join('\n'))
-  }
+    alert(dettagli.join('\n'));
+  };
 
-  const categorieByTipo = categorie.filter(c => c.tipo === formData.tipo)
-  const budgetsDisponibili = budgets.filter(b => b.importo > 0)
+  const categorieByTipo = categorie.filter(c => c.tipo === formData.tipo);
+  const budgetsDisponibili = budgets.filter(b => b.importo > 0);
 
   return (
     <div className="form-overlay">
@@ -416,7 +419,7 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
         </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default MovimentoForm
+export default MovimentoForm;
