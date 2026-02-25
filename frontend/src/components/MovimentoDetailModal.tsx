@@ -31,10 +31,10 @@ interface Movimento {
 }
 
 interface ScomposizioneComponente {
-  nome: string;
-  valore: number;
-  percentuale?: number;
-  dettagli?: any; // Can be string or object
+  tipo: string;
+  descrizione: string;
+  importo: number;
+  dettagli?: any;
 }
 
 interface ScomposizioneData {
@@ -86,12 +86,6 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
       const response = await fetch(`/api/movimenti/${movimento.id}/scomposizione`);
       if (response.ok) {
         const data = await response.json();
-        console.log('Scomposizione data:', data);
-        console.log('Scomposizione array:', data.scomposizione);
-        // Log each component in detail
-        data.scomposizione?.forEach((comp: any, idx: number) => {
-          console.log(`Component ${idx}:`, comp);
-        });
         setScomposizioneData(data);
       } else {
         console.error('Scomposizione fetch failed:', response.status);
@@ -133,14 +127,18 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
       // Common fields formatting
       if (dettagli.km_percorsi) parts.push(`${dettagli.km_percorsi} km`);
       if (dettagli.consumo_medio) parts.push(`${dettagli.consumo_medio} L/100km`);
-      if (dettagli.litri_consumati) parts.push(`${dettagli.litri_consumati} L`);
-      if (dettagli.prezzo_al_litro) parts.push(`${dettagli.prezzo_al_litro}€/L`);
+      if (dettagli.litri_consumati) parts.push(`${dettagli.litri_consumati.toFixed(1)} L`);
+      if (dettagli.prezzo_al_litro) parts.push(`${dettagli.prezzo_al_litro.toFixed(2)}€/L`);
       if (dettagli.tipo_carburante) parts.push(dettagli.tipo_carburante);
+      if (dettagli.costo_per_km) parts.push(`${dettagli.costo_per_km.toFixed(2)}€/km`);
       if (dettagli.ore_utilizzo) parts.push(`${dettagli.ore_utilizzo} ore`);
-      if (dettagli.anni_utilizzo) parts.push(`${dettagli.anni_utilizzo} anni`);
+      if (dettagli.anni_utilizzo) parts.push(`${dettagli.anni_utilizzo.toFixed(1)} anni`);
       if (dettagli.prezzo_acquisto) parts.push(`Acquisto: ${formatCurrency(dettagli.prezzo_acquisto)}`);
       if (dettagli.valore_residuo) parts.push(`Residuo: ${formatCurrency(dettagli.valore_residuo)}`);
-      if (dettagli.tasso_annuo) parts.push(`${(dettagli.tasso_annuo * 100).toFixed(1)}%/anno`);
+      if (dettagli.tasso_annuo) parts.push(`${dettagli.tasso_annuo}% annuo`);
+      if (dettagli.include && Array.isArray(dettagli.include)) {
+        parts.push(`Include: ${dettagli.include.join(', ')}`);
+      }
       
       return parts.length > 0 ? parts.join(' • ') : null;
     }
@@ -408,7 +406,7 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                 <Card padding="md" style={{ backgroundColor: theme.colors.background }}>
                   {/* Cost Summary */}
                   <div style={{ marginBottom: theme.spacing.md }}>
-                    <div style={{ display: 'flex', gap: theme.spacing.md, marginBottom: theme.spacing.sm }}>
+                    <div style={{ display: 'flex', gap: theme.spacing.md, marginBottom: theme.spacing.sm, flexWrap: 'wrap' }}>
                       <Badge variant="success" size="sm">
                         💵 Diretto: {formatCurrency(scomposizioneData.costo_diretto)}
                       </Badge>
@@ -437,42 +435,45 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                   {/* Components */}
                   {scomposizioneData.scomposizione.map((comp, index) => {
                     const dettagliText = formatDettagli(comp.dettagli);
+                    const percentuale = scomposizioneData.costo_totale > 0 
+                      ? (comp.importo / scomposizioneData.costo_totale) * 100 
+                      : 0;
                     
                     return (
                       <div key={index} style={rowStyles}>
-                        <div>
+                        <div style={{ flex: 1 }}>
                           <div style={{ 
                             fontSize: theme.typography.fontSize.sm,
-                            color: theme.colors.text.secondary 
+                            color: theme.colors.text.primary,
+                            fontWeight: theme.typography.fontWeight.medium 
                           }}>
-                            {comp.nome}
+                            {comp.descrizione}
                           </div>
                           {dettagliText && (
                             <div style={{ 
                               fontSize: theme.typography.fontSize.xs,
                               color: theme.colors.text.muted,
-                              marginTop: '2px'
+                              marginTop: '4px',
+                              lineHeight: 1.4
                             }}>
                               {dettagliText}
                             </div>
                           )}
                         </div>
-                        <div style={{ textAlign: 'right' }}>
+                        <div style={{ textAlign: 'right', marginLeft: theme.spacing.md }}>
                           <div style={{
                             fontSize: theme.typography.fontSize.base,
                             fontWeight: theme.typography.fontWeight.semibold,
                             color: theme.colors.text.primary,
                           }}>
-                            {formatCurrency(comp.valore)}
+                            {formatCurrency(comp.importo)}
                           </div>
-                          {comp.percentuale !== undefined && (
-                            <div style={{
-                              fontSize: theme.typography.fontSize.xs,
-                              color: theme.colors.text.muted,
-                            }}>
-                              {comp.percentuale.toFixed(1)}%
-                            </div>
-                          )}
+                          <div style={{
+                            fontSize: theme.typography.fontSize.xs,
+                            color: theme.colors.text.muted,
+                          }}>
+                            {percentuale.toFixed(1)}%
+                          </div>
                         </div>
                       </div>
                     );
