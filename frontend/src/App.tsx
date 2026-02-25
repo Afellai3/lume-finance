@@ -63,7 +63,10 @@ function App() {
       pageTitle={pageConfig[currentPage].title}
       pageSubtitle={pageConfig[currentPage].subtitle}
     >
-      {renderPage()}
+      {/* Force remount on page change to trigger useEffect and refresh data */}
+      <div key={currentPage}>
+        {renderPage()}
+      </div>
     </Layout>
   )
 }
