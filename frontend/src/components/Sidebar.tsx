@@ -1,6 +1,6 @@
 import './Sidebar.css'
 
-type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni' | 'budget'
+type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni' | 'budget' | 'obiettivi'
 
 interface SidebarProps {
   currentPage: Page
@@ -14,6 +14,7 @@ function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     { id: 'conti' as Page, icon: '🏦', label: 'Conti' },
     { id: 'beni' as Page, icon: '🚗', label: 'Beni' },
     { id: 'budget' as Page, icon: '🎯', label: 'Budget' },
+    { id: 'obiettivi' as Page, icon: '💎', label: 'Obiettivi' },
   ]
 
   return (

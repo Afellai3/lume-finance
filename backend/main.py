@@ -1,79 +1,50 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
-# Import routes
-from .routes import conti, beni, movimenti, analytics, budget
-from .database import init_database
+from .routes import conti, movimenti, dashboard, beni, budget, obiettivi
+from .database import init_db
 
 app = FastAPI(
     title="Lume Finance API",
-    description="Gestione Finanze Personali con Scomposizione Costi Dettagliata",
+    description="API per gestione finanze personali",
     version="0.1.0"
 )
 
-# CORS configuration for frontend
+# CORS per development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],  # React/Vite dev servers
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# Inizializza database
+init_db()
+
+# Registra routes
 app.include_router(conti.router, prefix="/api")
-app.include_router(beni.router, prefix="/api")
 app.include_router(movimenti.router, prefix="/api")
-app.include_router(analytics.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
+app.include_router(beni.router, prefix="/api")
 app.include_router(budget.router, prefix="/api")
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Inizializza database all'avvio"""
-    try:
-        init_database()
-        print("✅ Database inizializzato")
-    except Exception as e:
-        print(f"⚠️ Errore inizializzazione database: {e}")
+app.include_router(obiettivi.router, prefix="/api")
 
 
 @app.get("/")
 async def root():
     return {
-        "messaggio": "Benvenuto su Lume Finance API",
-        "status": "online",
-        "versione": "0.1.0",
-        "documentazione": "/docs"
+        "app": "Lume Finance",
+        "version": "0.1.0",
+        "status": "running"
     }
 
 
-@app.get("/api/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "database": "connected"
-    }
-
-
-@app.get("/api/info")
-async def api_info():
-    """Informazioni su endpoint disponibili"""
-    return {
-        "endpoints": {
-            "conti": "/api/conti",
-            "beni": "/api/beni",
-            "movimenti": "/api/movimenti",
-            "analytics": "/api/analytics",
-            "budget": "/api/budget"
-        },
-        "features": [
-            "Gestione conti bancari e portafogli",
-            "Tracciamento beni (auto, elettrodomestici)",
-            "Movimenti con scomposizione costi automatica",
-            "Calcolo dettagliato costi veicoli",
-            "Calcolo consumo elettrodomestici",
-            "Dashboard analytics con KPI",
-            "Gestione budget per categoria"
-        ]
-    }
+if __name__ == "__main__":
+    uvicorn.run(
+        "backend.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
