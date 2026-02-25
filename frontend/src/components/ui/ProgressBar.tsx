@@ -84,7 +84,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           {showLabel && (
             <span style={{ fontWeight: theme.typography.fontWeight.semibold }}>
               {value.toFixed(0)}/{max}
-            </span>>
+            </span>
           )}
         </div>
       )}
