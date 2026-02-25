@@ -87,6 +87,11 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
       if (response.ok) {
         const data = await response.json();
         console.log('Scomposizione data:', data);
+        console.log('Scomposizione array:', data.scomposizione);
+        // Log each component in detail
+        data.scomposizione?.forEach((comp: any, idx: number) => {
+          console.log(`Component ${idx}:`, comp);
+        });
         setScomposizioneData(data);
       } else {
         console.error('Scomposizione fetch failed:', response.status);
