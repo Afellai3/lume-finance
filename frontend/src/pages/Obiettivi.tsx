@@ -30,13 +30,51 @@ function Obiettivi() {
   const fetchObiettivi = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/obiettivi');
+      // Use analytics/dashboard endpoint which has correct importo_attuale calculation
+      const response = await fetch('/api/analytics/dashboard');
       if (response.ok) {
-        const data = await response.json();
-        setObiettivi(data);
+        const dashboardData = await response.json();
+        
+        // Extract obiettivi from dashboard
+        if (dashboardData.obiettivi_risparmio && dashboardData.obiettivi_risparmio.length > 0) {
+          // Transform dashboard goals into Obiettivo format
+          const obiettiviData = dashboardData.obiettivi_risparmio.map((goal: any) => ({
+            id: goal.id,
+            nome: goal.nome,
+            descrizione: goal.descrizione,
+            importo_target: goal.importo_target || goal.target || 0,
+            importo_attuale: goal.importo_accumulato || goal.importo_corrente || goal.importo_attuale || 0,
+            importo_corrente: goal.importo_accumulato || goal.importo_corrente || goal.importo_attuale || 0,
+            data_target: goal.data_target || goal.data_scadenza,
+            data_scadenza: goal.data_scadenza || goal.data_target,
+            completato: goal.completato || false,
+            priorita: goal.priorita || 1,
+            icona: goal.icona
+          }));
+          setObiettivi(obiettiviData);
+        } else {
+          // Fallback to direct endpoint if dashboard doesn't have goals
+          const obiettiviResponse = await fetch('/api/obiettivi');
+          if (obiettiviResponse.ok) {
+            const data = await obiettiviResponse.json();
+            setObiettivi(data || []);
+          } else {
+            setObiettivi([]);
+          }
+        }
+      } else {
+        // Last resort: try direct obiettivi endpoint
+        const obiettiviResponse = await fetch('/api/obiettivi');
+        if (obiettiviResponse.ok) {
+          const data = await obiettiviResponse.json();
+          setObiettivi(data || []);
+        } else {
+          setObiettivi([]);
+        }
       }
     } catch (error) {
       console.error('Errore:', error);
+      setObiettivi([]);
     } finally {
       setLoading(false);
     }
