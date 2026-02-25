@@ -25,6 +25,74 @@
   to { transform: rotate(360deg); }
 }
 
+/* Period Filter */
+.period-filter {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filter-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.filter-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.custom-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.custom-date-inputs input[type="date"] {
+  padding: 0.75rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+}
+
+.custom-date-inputs input[type="date"]:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.custom-date-inputs span {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+/* KPI Section */
 .kpi-section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -32,6 +100,13 @@
   margin-bottom: 2rem;
 }
 
+/* New Sections */
+.comparison-section,
+.warnings-section {
+  margin-bottom: 2rem;
+}
+
+/* Dashboard Grid */
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -49,6 +124,10 @@
   grid-column: 1 / -1;
 }
 
+.dashboard-card.wide-card {
+  grid-column: 1 / -1;
+}
+
 .dashboard-card h2 {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
@@ -61,12 +140,14 @@
   color: var(--text-secondary);
 }
 
+/* Responsive */
 @media (max-width: 1024px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
   
-  .dashboard-card.full-width {
+  .dashboard-card.full-width,
+  .dashboard-card.wide-card {
     grid-column: 1;
   }
 }
@@ -75,10 +156,32 @@
   .kpi-section {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  .filter-buttons {
+    gap: 0.5rem;
+  }
+
+  .filter-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+  }
+
+  .custom-date-inputs {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 480px) {
   .kpi-section {
     grid-template-columns: 1fr;
+  }
+
+  .filter-buttons {
+    flex-direction: column;
+  }
+
+  .filter-btn {
+    width: 100%;
   }
 }
