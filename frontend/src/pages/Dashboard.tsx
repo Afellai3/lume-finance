@@ -39,97 +39,12 @@ function Dashboard() {
   const [error, setError] = useState('');
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('1m');
 
-  // Mock data for new analytics components (will be replaced with API calls)
-  const mockTrendData = [
-    { periodo: 'Set 2025', entrate: 3200, uscite: 2800 },
-    { periodo: 'Ott 2025', entrate: 3500, uscite: 2650 },
-    { periodo: 'Nov 2025', entrate: 3100, uscite: 2900 },
-    { periodo: 'Dic 2025', entrate: 4200, uscite: 3500 },
-    { periodo: 'Gen 2026', entrate: 3300, uscite: 2700 },
-    { periodo: 'Feb 2026', entrate: 3600, uscite: 2850 },
-  ];
-
-  const mockComparisonData = {
-    periodo_corrente: {
-      label: 'Febbraio 2026',
-      entrate: 3600,
-      uscite: 2850,
-      bilancio: 750,
-    },
-    periodo_precedente: {
-      label: 'Gennaio 2026',
-      entrate: 3300,
-      uscite: 2700,
-      bilancio: 600,
-    },
-  };
-
-  const mockBudgetWarnings = [
-    {
-      categoria_nome: 'Casa',
-      categoria_icona: '🏠',
-      limite: 1000,
-      speso: 850,
-      percentuale: 85,
-    },
-    {
-      categoria_nome: 'Alimentari',
-      categoria_icona: '🍕',
-      limite: 500,
-      speso: 460,
-      percentuale: 92,
-    },
-    {
-      categoria_nome: 'Trasporti',
-      categoria_icona: '🚗',
-      limite: 300,
-      speso: 255,
-      percentuale: 85,
-    },
-  ];
-
-  const mockTopSpese = [
-    {
-      id: 1,
-      descrizione: 'Affitto casa',
-      importo: -850,
-      data: '2026-02-01',
-      categoria_nome: 'Casa',
-      categoria_icona: '🏠',
-    },
-    {
-      id: 2,
-      descrizione: 'Spesa Carrefour',
-      importo: -120,
-      data: '2026-02-15',
-      categoria_nome: 'Alimentari',
-      categoria_icona: '🍕',
-    },
-    {
-      id: 3,
-      descrizione: 'Rifornimento Eni',
-      importo: -85,
-      data: '2026-02-10',
-      categoria_nome: 'Trasporti',
-      categoria_icona: '⛽',
-    },
-    {
-      id: 4,
-      descrizione: 'Cena ristorante',
-      importo: -65,
-      data: '2026-02-14',
-      categoria_nome: 'Svago',
-      categoria_icona: '🍴',
-    },
-    {
-      id: 5,
-      descrizione: 'Amazon ordine',
-      importo: -45,
-      data: '2026-02-18',
-      categoria_nome: 'Shopping',
-      categoria_icona: '🛍️',
-    },
-  ];
+  // Sprint 2: Real data states
+  const [trendData, setTrendData] = useState<any[]>([]);
+  const [comparisonData, setComparisonData] = useState<any>(null);
+  const [budgetWarnings, setBudgetWarnings] = useState<any[]>([]);
+  const [topSpese, setTopSpese] = useState<any[]>([]);
+  const [loadingAnalytics, setLoadingAnalytics] = useState(true);
 
   const fetchDashboard = async () => {
     setLoading(true);
@@ -235,8 +150,74 @@ function Dashboard() {
     }
   };
 
+  // Sprint 2: Fetch analytics data
+  const fetchAnalytics = async () => {
+    setLoadingAnalytics(true);
+    try {
+      // Map period filter to API format
+      const periodMap: { [key in PeriodFilter]: string } = {
+        '1m': '1m',
+        '3m': '3m',
+        '6m': '6m',
+        '1y': '1y'
+      };
+      const apiPeriod = periodMap[periodFilter];
+
+      // Fetch all analytics in parallel
+      const [trendRes, comparisonRes, warningsRes, topSpeseRes] = await Promise.all([
+        fetch(`/api/analytics/trend?period=${apiPeriod}`),
+        fetch('/api/analytics/comparison?period=month'),
+        fetch('/api/analytics/budget-warnings'),
+        fetch(`/api/analytics/top-spese?limit=5&period=${apiPeriod === '1m' ? 'month' : apiPeriod}`)
+      ]);
+
+      // Parse responses
+      if (trendRes.ok) {
+        const trend = await trendRes.json();
+        setTrendData(trend);
+        console.log('✅ Trend data loaded:', trend);
+      } else {
+        console.error('❌ Failed to load trend data');
+        setTrendData([]);
+      }
+
+      if (comparisonRes.ok) {
+        const comparison = await comparisonRes.json();
+        setComparisonData(comparison);
+        console.log('✅ Comparison data loaded:', comparison);
+      } else {
+        console.error('❌ Failed to load comparison data');
+        setComparisonData(null);
+      }
+
+      if (warningsRes.ok) {
+        const warnings = await warningsRes.json();
+        setBudgetWarnings(warnings);
+        console.log('✅ Budget warnings loaded:', warnings);
+      } else {
+        console.error('❌ Failed to load budget warnings');
+        setBudgetWarnings([]);
+      }
+
+      if (topSpeseRes.ok) {
+        const top = await topSpeseRes.json();
+        setTopSpese(top);
+        console.log('✅ Top spese loaded:', top);
+      } else {
+        console.error('❌ Failed to load top spese');
+        setTopSpese([]);
+      }
+
+    } catch (err) {
+      console.error('❌ Error loading analytics:', err);
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  };
+
   useEffect(() => {
     fetchDashboard();
+    fetchAnalytics();
   }, [periodFilter]);
 
   if (loading) {
@@ -459,17 +440,17 @@ function Dashboard() {
         </Card>
       </div>
 
-      {/* SPRINT 2: Trend Chart */}
-      <TrendChart data={mockTrendData} loading={false} />
+      {/* SPRINT 2: Trend Chart - REAL DATA */}
+      <TrendChart data={trendData} loading={loadingAnalytics} />
 
-      {/* SPRINT 2: Comparison + Budget Warnings Grid */}
+      {/* SPRINT 2: Comparison + Budget Warnings Grid - REAL DATA */}
       <div style={twoColGridStyles}>
-        <ComparisonCard data={mockComparisonData} loading={false} />
-        <BudgetWarnings warnings={mockBudgetWarnings} loading={false} />
+        <ComparisonCard data={comparisonData} loading={loadingAnalytics} />
+        <BudgetWarnings warnings={budgetWarnings} loading={loadingAnalytics} />
       </div>
 
-      {/* SPRINT 2: Top Spese */}
-      <TopSpese spese={mockTopSpese} loading={false} limit={5} />
+      {/* SPRINT 2: Top Spese - REAL DATA */}
+      <TopSpese spese={topSpese} loading={loadingAnalytics} limit={5} />
 
       {/* Category Spending Chart */}
       {data.spese_per_categoria && data.spese_per_categoria.length > 0 && (
