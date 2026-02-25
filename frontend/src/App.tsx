@@ -9,7 +9,7 @@ import Beni from './pages/Beni'
 type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni'
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('movimenti')
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard')
 
   const renderPage = () => {
     switch (currentPage) {
@@ -22,7 +22,7 @@ function App() {
       case 'beni':
         return <Beni />
       default:
-        return <Movimenti />
+        return <Dashboard />
     }
   }
 
