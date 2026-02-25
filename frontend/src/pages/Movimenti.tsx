@@ -3,6 +3,7 @@ import './Movimenti.css'
 import MovimentoCard from '../components/MovimentoCard'
 import MovimentoForm from '../components/MovimentoForm'
 import MovimentiFilters from '../components/MovimentiFilters'
+import MovimentoDetailModal from '../components/MovimentoDetailModal'
 import { Movimento, Categoria, Conto } from '../types'
 
 interface Filters {
@@ -15,6 +16,14 @@ interface Filters {
   ordine: string
 }
 
+interface PaginatedResponse {
+  items: Movimento[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+}
+
 function Movimenti() {
   const [movimenti, setMovimenti] = useState<Movimento[]>([])
   const [movimentiFiltrati, setMovimentiFiltrati] = useState<Movimento[]>([])
@@ -24,6 +33,14 @@ function Movimenti() {
   const [showForm, setShowForm] = useState(false)
   const [editingMovimento, setEditingMovimento] = useState<Movimento | null>(null)
   const [showFilters, setShowFilters] = useState(false)
+  const [detailMovimentoId, setDetailMovimentoId] = useState<number | null>(null)
+  const [exporting, setExporting] = useState(false)
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalItems, setTotalItems] = useState(0)
+  const perPage = 50
   
   const [filters, setFilters] = useState<Filters>({
     search: '',
@@ -36,9 +53,13 @@ function Movimenti() {
   })
 
   const fetchData = async () => {
+    setLoading(true)
     try {
+      // Parse ordinamento
+      const [orderBy, orderDir] = filters.ordine.split('_')
+      
       const [movRes, catRes, contiRes] = await Promise.all([
-        fetch('/api/movimenti'),
+        fetch(`/api/movimenti?page=${currentPage}&per_page=${perPage}&order_by=${orderBy}&order_dir=${orderDir}`),
         fetch('/api/movimenti/categorie'),
         fetch('/api/conti')
       ])
@@ -47,16 +68,18 @@ function Movimenti() {
         throw new Error('Errore caricamento dati')
       }
 
-      const movimentiData = await movRes.json()
+      const movimentiData: PaginatedResponse = await movRes.json()
       const categorieData = await catRes.json()
       const contiData = await contiRes.json()
 
-      setMovimenti(movimentiData)
-      setMovimentiFiltrati(movimentiData)
+      setMovimenti(movimentiData.items)
+      setTotalPages(movimentiData.total_pages)
+      setTotalItems(movimentiData.total)
       setCategorie(categorieData)
       setConti(contiData)
     } catch (error) {
       console.error('Errore:', error)
+      alert('Errore durante il caricamento dei dati')
     } finally {
       setLoading(false)
     }
@@ -64,9 +87,16 @@ function Movimenti() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [currentPage, filters.ordine])
 
-  // Applica filtri
+  // Reset page on filter change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    }
+  }, [filters.search, filters.tipo, filters.categoria_id, filters.conto_id, filters.data_da, filters.data_a])
+
+  // Applica filtri lato client (su risultati pagina corrente)
   useEffect(() => {
     let risultati = [...movimenti]
 
@@ -103,25 +133,6 @@ function Movimenti() {
     // Filtro data a
     if (filters.data_a) {
       risultati = risultati.filter(m => m.data <= filters.data_a + 'T23:59:59')
-    }
-
-    // Ordinamento
-    switch (filters.ordine) {
-      case 'data_desc':
-        risultati.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
-        break
-      case 'data_asc':
-        risultati.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
-        break
-      case 'importo_desc':
-        risultati.sort((a, b) => b.importo - a.importo)
-        break
-      case 'importo_asc':
-        risultati.sort((a, b) => a.importo - b.importo)
-        break
-      case 'categoria':
-        risultati.sort((a, b) => (a.categoria_nome || '').localeCompare(b.categoria_nome || ''))
-        break
     }
 
     setMovimentiFiltrati(risultati)
@@ -170,6 +181,33 @@ function Movimenti() {
       data_a: '',
       ordine: 'data_desc'
     })
+    setCurrentPage(1)
+  }
+
+  const handleExportCSV = async () => {
+    setExporting(true)
+    try {
+      const response = await fetch('/api/movimenti/export')
+      if (!response.ok) throw new Error('Errore export')
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `movimenti_${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      alert('Errore durante l\'export CSV')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleCardClick = (movimento: Movimento) => {
+    setDetailMovimentoId(movimento.id)
   }
 
   const isFilterActive = () => {
@@ -191,11 +229,18 @@ function Movimenti() {
         <div>
           <h1>💸 Movimenti</h1>
           <p className="page-subtitle">
-            {movimentiFiltrati.length} {movimentiFiltrati.length === 1 ? 'movimento' : 'movimenti'}
-            {isFilterActive() && ` (filtrati da ${movimenti.length})`}
+            {totalItems} {totalItems === 1 ? 'movimento' : 'movimenti'} totali
+            {isFilterActive() && ` • ${movimentiFiltrati.length} filtrati`}
           </p>
         </div>
         <div className="header-actions">
+          <button 
+            className="btn btn-outline"
+            onClick={handleExportCSV}
+            disabled={exporting || totalItems === 0}
+          >
+            {exporting ? '⏳' : '💾'} Esporta CSV
+          </button>
           <button 
             className={`btn ${showFilters ? 'btn-secondary' : 'btn-outline'}`}
             onClick={() => setShowFilters(!showFilters)}
@@ -229,6 +274,13 @@ function Movimenti() {
         />
       )}
 
+      {detailMovimentoId && (
+        <MovimentoDetailModal
+          movimentoId={detailMovimentoId}
+          onClose={() => setDetailMovimentoId(null)}
+        />
+      )}
+
       {movimentiFiltrati.length === 0 ? (
         <div className="empty-state">
           {isFilterActive() ? (
@@ -252,16 +304,44 @@ function Movimenti() {
           )}
         </div>
       ) : (
-        <div className="movimenti-list">
-          {movimentiFiltrati.map((movimento) => (
-            <MovimentoCard
-              key={movimento.id}
-              movimento={movimento}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        <>
+          <div className="movimenti-list">
+            {movimentiFiltrati.map((movimento) => (
+              <div key={movimento.id} onClick={() => handleCardClick(movimento)}>
+                <MovimentoCard
+                  movimento={movimento}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Paginazione */}
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+              >
+                ← Precedente
+              </button>
+
+              <div className="pagination-info">
+                Pagina <strong>{currentPage}</strong> di <strong>{totalPages}</strong>
+              </div>
+
+              <button
+                className="pagination-btn"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+              >
+                Successiva →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
