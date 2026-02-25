@@ -79,6 +79,35 @@ async def list_budget(attivi_solo: bool = True):
         return budget_list
 
 
+@router.get("/riepilogo/{periodo}")
+async def get_riepilogo(periodo: str = 'mensile'):
+    """Ottiene riepilogo budget per periodo"""
+    with get_db_connection() as conn:
+        # Ottieni tutti i budget attivi
+        budget_list = await list_budget(attivi_solo=True)
+        
+        # Calcola totali
+        totale_budget = sum(b['importo'] for b in budget_list)
+        totale_speso = sum(b['spesa_corrente'] for b in budget_list)
+        rimanente = totale_budget - totale_speso
+        percentuale = (totale_speso / totale_budget * 100) if totale_budget > 0 else 0
+        budget_superati = sum(1 for b in budget_list if b['stato'] == 'superato')
+        
+        now = datetime.now()
+        
+        return {
+            'totale_budget': totale_budget,
+            'totale_speso': totale_speso,
+            'rimanente': rimanente,
+            'percentuale_utilizzo': percentuale,
+            'budget_superati': budget_superati,
+            'periodo': {
+                'mese': now.month,
+                'anno': now.year
+            }
+        }
+
+
 def get_periodo_query(periodo: str) -> str:
     """Genera la condizione WHERE per il periodo"""
     now = datetime.now()
@@ -161,7 +190,7 @@ async def create_budget(budget: BudgetCreate):
             (budget.categoria_id, budget.importo, budget.periodo)
         )
         
-        conn.commit()  # FIX: Aggiungi commit
+        conn.commit()
         budget_id = cursor.lastrowid
         
         return await get_budget(budget_id)
@@ -194,7 +223,7 @@ async def update_budget(budget_id: int, budget: BudgetUpdate):
             params
         )
         
-        conn.commit()  # FIX: Aggiungi commit
+        conn.commit()
         
         return await get_budget(budget_id)
 
@@ -209,6 +238,6 @@ async def delete_budget(budget_id: int):
             raise HTTPException(status_code=404, detail="Budget non trovato")
         
         conn.execute("DELETE FROM budget WHERE id = ?", (budget_id,))
-        conn.commit()  # FIX: Aggiungi commit
+        conn.commit()
         
         return {"message": "Budget eliminato con successo"}
