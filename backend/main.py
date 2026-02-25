@@ -53,3 +53,24 @@ async def health_check():
         "status": "healthy",
         "database": "connected"
     }
+
+
+@app.get("/api/info")
+async def api_info():
+    """Informazioni su endpoint disponibili"""
+    return {
+        "endpoints": {
+            "conti": "/api/conti",
+            "beni": "/api/beni",
+            "movimenti": "/api/movimenti",
+            "analytics": "/api/analytics"
+        },
+        "features": [
+            "Gestione conti bancari e portafogli",
+            "Tracciamento beni (auto, elettrodomestici)",
+            "Movimenti con scomposizione costi automatica",
+            "Calcolo dettagliato costi veicoli",
+            "Calcolo consumo elettrodomestici",
+            "Dashboard analytics con KPI"
+        ]
+    }

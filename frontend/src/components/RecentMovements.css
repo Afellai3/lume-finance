@@ -1,0 +1,67 @@
+.recent-movements {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.movement-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.movement-row:hover {
+  background: var(--bg-tertiary);
+}
+
+.movement-icon-small {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border-radius: 8px;
+}
+
+.movement-info-small {
+  flex: 1;
+  min-width: 0;
+}
+
+.movement-desc {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.movement-meta {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+
+.movement-amount-small {
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.movement-amount-small.tipo-entrata {
+  color: var(--success);
+}
+
+.movement-amount-small.tipo-uscita {
+  color: var(--danger);
+}
+
+.movement-amount-small.tipo-trasferimento {
+  color: var(--warning);
+}
