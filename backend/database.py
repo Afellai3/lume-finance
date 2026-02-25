@@ -1,88 +1,62 @@
-"""Configurazione database e connessione SQLite"""
+"""Gestione database SQLite"""
 
 import sqlite3
-from contextlib import contextmanager
-from pathlib import Path
-from typing import Optional
 import os
+from pathlib import Path
+from contextlib import contextmanager
 
-# Path al database
-DB_PATH = os.getenv("DATABASE_PATH", "../database/lume.db")
-
-
-def get_db_path() -> Path:
-    """Ottiene il path assoluto del database"""
-    current_dir = Path(__file__).parent
-    db_path = current_dir / DB_PATH
-    return db_path
+DB_PATH = os.getenv("DB_PATH", "data/lume.db")
 
 
 @contextmanager
 def get_db_connection():
-    """Context manager per connessione database con commit/rollback automatico"""
-    conn = sqlite3.connect(get_db_path())
-    conn.row_factory = sqlite3.Row  # Abilita accesso colonne per nome
+    """Context manager per connessione database"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     try:
         yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
     finally:
         conn.close()
 
 
-def init_database():
-    """Inizializza il database eseguendo lo schema"""
-    db_path = get_db_path()
-    
-    # Controlla se il database esiste già
-    if db_path.exists():
-        print(f"Database già esistente: {db_path}")
-        return
-    
-    # Crea directory se non esiste
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    # Esegue lo schema
-    schema_path = db_path.parent / "schema.sql"
-    
-    if not schema_path.exists():
-        raise FileNotFoundError(f"Schema non trovato: {schema_path}")
-    
-    with open(schema_path, 'r', encoding='utf-8') as f:
-        schema_sql = f.read()
-    
-    with get_db_connection() as conn:
-        conn.executescript(schema_sql)
-    
-    print(f"Database creato: {db_path}")
-    
-    # Carica dati di esempio se esistono
-    seed_path = db_path.parent / "seed_data.sql"
-    if seed_path.exists():
-        with open(seed_path, 'r', encoding='utf-8') as f:
-            seed_sql = f.read()
-        
-        with get_db_connection() as conn:
-            conn.executescript(seed_sql)
-        
-        print("Dati di esempio caricati")
-
-
-def dict_from_row(row: sqlite3.Row) -> dict:
-    """Converte una Row SQLite in dizionario"""
+def dict_from_row(row):
+    """Converte sqlite3.Row in dizionario"""
     return {key: row[key] for key in row.keys()}
 
 
-if __name__ == "__main__":
-    # Test connessione
-    print("Test connessione database...")
-    init_database()
+def init_db():
+    """Inizializza il database con schema e seed data"""
+    # Crea directory data se non esiste
+    Path("data").mkdir(exist_ok=True)
     
     with get_db_connection() as conn:
-        cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = cursor.fetchall()
-        print(f"\nTabelle trovate ({len(tables)}):")
-        for table in tables:
-            print(f"  - {table[0]}")
+        # Esegui schema
+        with open("database/schema.sql") as f:
+            conn.executescript(f.read())
+        
+        # Esegui migrations se esistono
+        migrations_dir = Path("database/migrations")
+        if migrations_dir.exists():
+            migration_files = sorted(migrations_dir.glob("*.sql"))
+            for migration_file in migration_files:
+                print(f"Executing migration: {migration_file.name}")
+                try:
+                    with open(migration_file) as f:
+                        conn.executescript(f.read())
+                    print(f"  ✓ {migration_file.name} completed")
+                except sqlite3.OperationalError as e:
+                    # Ignora errori tipo "colonna già esistente"
+                    if "duplicate column name" in str(e) or "already exists" in str(e):
+                        print(f"  → {migration_file.name} already applied")
+                    else:
+                        raise
+        
+        # Verifica se database è vuoto
+        cursor = conn.execute("SELECT COUNT(*) FROM conti")
+        if cursor.fetchone()[0] == 0:
+            # Esegui seed solo se vuoto
+            with open("database/seed.sql") as f:
+                conn.executescript(f.read())
+        
+        conn.commit()
+        print("✓ Database initialized successfully")
