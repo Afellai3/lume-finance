@@ -5,8 +5,9 @@ import Dashboard from './pages/Dashboard'
 import Movimenti from './pages/Movimenti'
 import Conti from './pages/Conti'
 import Beni from './pages/Beni'
+import Budget from './pages/Budget'
 
-type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni'
+type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni' | 'budget'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -21,6 +22,8 @@ function App() {
         return <Conti />
       case 'beni':
         return <Beni />
+      case 'budget':
+        return <Budget />
       default:
         return <Dashboard />
     }
