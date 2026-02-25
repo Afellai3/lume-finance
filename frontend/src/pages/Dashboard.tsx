@@ -1,339 +1,360 @@
-import { useState, useEffect } from 'react'
-import './Dashboard.css'
-import KPICard from '../components/KPICard'
-import CategoryChart from '../components/CategoryChart'
-import RecentMovements from '../components/RecentMovements'
-import SavingsGoals from '../components/SavingsGoals'
-import TrendChart from '../components/TrendChart'
-import ComparisonCard from '../components/ComparisonCard'
-import BudgetWarnings from '../components/BudgetWarnings'
-import TopExpenses from '../components/TopExpenses'
+import { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpCircle, ArrowDownCircle, AlertCircle } from 'lucide-react';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { theme, getCategoryColor } from '../styles/theme';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface DashboardData {
   kpi: {
-    patrimonio_totale: number
-    entrate_mese: number
-    uscite_mese: number
-    saldo_mese: number
-  }
+    patrimonio_totale: number;
+    entrate_mese: number;
+    uscite_mese: number;
+    saldo_mese: number;
+  };
   spese_per_categoria: Array<{
-    nome: string
-    icona: string
-    colore: string
-    totale: number
-  }>
-  ultimi_movimenti: Array<any>
-  obiettivi_risparmio: Array<any>
-  conti_attivi: Array<any>
+    nome: string;
+    icona: string;
+    colore: string;
+    totale: number;
+  }>;
+  ultimi_movimenti: Array<any>;
+  obiettivi_risparmio: Array<any>;
   periodo: {
-    data_da: string
-    data_a: string
-    mese: number
-    anno: number
-    mese_nome: string
-  }
+    mese_nome: string;
+  };
 }
 
-type PeriodFilter = '1m' | '3m' | '6m' | '1y' | 'custom'
+type PeriodFilter = '1m' | '3m' | '6m' | '1y';
 
 function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [trendData, setTrendData] = useState<any[]>([])
-  const [comparisonData, setComparisonData] = useState<any>(null)
-  const [budgetWarnings, setBudgetWarnings] = useState<any[]>([])
-  const [topExpenses, setTopExpenses] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  
-  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('1m')
-  const [customDateFrom, setCustomDateFrom] = useState('')
-  const [customDateTo, setCustomDateTo] = useState('')
-
-  const calculateDateRange = (filter: PeriodFilter): { from: string; to: string } => {
-    const today = new Date()
-    const year = today.getFullYear()
-    const month = today.getMonth()
-    
-    switch (filter) {
-      case '1m': {
-        const firstDay = new Date(year, month, 1)
-        const lastDay = new Date(year, month + 1, 0)
-        return {
-          from: firstDay.toISOString().split('T')[0],
-          to: lastDay.toISOString().split('T')[0]
-        }
-      }
-      case '3m': {
-        const firstDay = new Date(year, month - 2, 1)
-        const lastDay = new Date(year, month + 1, 0)
-        return {
-          from: firstDay.toISOString().split('T')[0],
-          to: lastDay.toISOString().split('T')[0]
-        }
-      }
-      case '6m': {
-        const firstDay = new Date(year, month - 5, 1)
-        const lastDay = new Date(year, month + 1, 0)
-        return {
-          from: firstDay.toISOString().split('T')[0],
-          to: lastDay.toISOString().split('T')[0]
-        }
-      }
-      case '1y': {
-        const firstDay = new Date(year, 0, 1)
-        const lastDay = new Date(year, 11, 31)
-        return {
-          from: firstDay.toISOString().split('T')[0],
-          to: lastDay.toISOString().split('T')[0]
-        }
-      }
-      case 'custom':
-        return {
-          from: customDateFrom,
-          to: customDateTo
-        }
-    }
-  }
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [periodFilter, setPeriodFilter] = useState<PeriodFilter>('1m');
 
   const fetchDashboard = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const { from, to } = calculateDateRange(periodFilter)
-      
-      const params = new URLSearchParams()
-      if (periodFilter !== '1m') {
-        params.append('data_da', from)
-        params.append('data_a', to)
-      }
-
-      const [dashRes, trendRes, compRes, warningsRes, topRes] = await Promise.all([
-        fetch(`/api/analytics/dashboard?${params.toString()}`),
-        fetch('/api/analytics/trend-mensile?mesi=6'),
-        fetch('/api/analytics/confronto-periodo'),
-        fetch('/api/analytics/budget-warnings'),
-        fetch('/api/analytics/top-spese?limit=5')
-      ])
-
-      if (!dashRes.ok) throw new Error('Errore caricamento dashboard')
-
-      const [dashboardData, trend, comparison, warnings, top] = await Promise.all([
-        dashRes.json(),
-        trendRes.ok ? trendRes.json() : [],
-        compRes.ok ? compRes.json() : null,
-        warningsRes.ok ? warningsRes.json() : [],
-        topRes.ok ? topRes.json() : []
-      ])
-
-      setData(dashboardData)
-      setTrendData(trend)
-      setComparisonData(comparison)
-      setBudgetWarnings(warnings)
-      setTopExpenses(top)
+      const response = await fetch('/api/analytics/dashboard?');
+      if (!response.ok) throw new Error('Errore caricamento dashboard');
+      const dashboardData = await response.json();
+      setData(dashboardData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore sconosciuto')
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchDashboard()
-  }, [periodFilter, customDateFrom, customDateTo])
-
-  const handlePeriodChange = (filter: PeriodFilter) => {
-    setPeriodFilter(filter)
-  }
+    fetchDashboard();
+  }, [periodFilter]);
 
   if (loading) {
     return (
-      <div className="dashboard-page">
-        <div className="loading-state">
-          <div className="spinner"></div>
-          <p>Caricamento dashboard...</p>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: theme.spacing.md }}>⏳</div>
+          <p style={{ color: theme.colors.text.secondary }}>Caricamento dashboard...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
-      <div className="dashboard-page">
-        <div className="error-state">
-          <p>❌ {error}</p>
-          <button className="btn btn-primary" onClick={fetchDashboard}>
-            Riprova
-          </button>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Card padding="xl">
+          <div style={{ textAlign: 'center' }}>
+            <AlertCircle size={48} color={theme.colors.danger} style={{ marginBottom: theme.spacing.md }} />
+            <p style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.lg }}>{error}</p>
+            <Button variant="primary" onClick={fetchDashboard}>Riprova</Button>
+          </div>
+        </Card>
       </div>
-    )
+    );
   }
 
-  if (!data) return null
+  if (!data) return null;
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+  };
+
+  // Styles
+  const containerStyles: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing.lg,
+  };
+
+  const gridStyles: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+    gap: theme.spacing.md,
+  };
+
+  const balanceCardStyles: React.CSSProperties = {
+    background: theme.colors.primary.gradient,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
+    boxShadow: theme.shadows.primary,
+    color: theme.colors.text.white,
+  };
 
   return (
-    <div className="dashboard-page">
-      <header className="page-header">
-        <div>
-          <h1>📊 Dashboard</h1>
-          <p className="page-subtitle">
-            Panoramica finanziaria - {data.periodo.mese_nome}
-          </p>
-        </div>
-      </header>
-
-      {/* Filtro Periodo */}
-      <section className="period-filter">
-        <div className="filter-buttons">
-          <button
-            className={`filter-btn ${periodFilter === '1m' ? 'active' : ''}`}
-            onClick={() => handlePeriodChange('1m')}
-          >
-            Mese
-          </button>
-          <button
-            className={`filter-btn ${periodFilter === '3m' ? 'active' : ''}`}
-            onClick={() => handlePeriodChange('3m')}
-          >
-            3 Mesi
-          </button>
-          <button
-            className={`filter-btn ${periodFilter === '6m' ? 'active' : ''}`}
-            onClick={() => handlePeriodChange('6m')}
-          >
-            6 Mesi
-          </button>
-          <button
-            className={`filter-btn ${periodFilter === '1y' ? 'active' : ''}`}
-            onClick={() => handlePeriodChange('1y')}
-          >
-            Anno
-          </button>
-          <button
-            className={`filter-btn ${periodFilter === 'custom' ? 'active' : ''}`}
-            onClick={() => handlePeriodChange('custom')}
-          >
-            📅 Custom
-          </button>
-        </div>
-
-        {periodFilter === 'custom' && (
-          <div className="custom-date-inputs">
-            <input
-              type="date"
-              value={customDateFrom}
-              onChange={(e) => setCustomDateFrom(e.target.value)}
-              placeholder="Da"
-            />
-            <span>→</span>
-            <input
-              type="date"
-              value={customDateTo}
-              onChange={(e) => setCustomDateTo(e.target.value)}
-              placeholder="A"
-            />
-          </div>
-        )}
-      </section>
-
-      {/* KPI Cards */}
-      <section className="kpi-section">
-        <KPICard
-          icon="💰"
-          label="Patrimonio Totale"
-          value={data.kpi.patrimonio_totale}
-          format="currency"
-          trend="neutral"
-        />
-        <KPICard
-          icon="📈"
-          label="Entrate Periodo"
-          value={data.kpi.entrate_mese}
-          format="currency"
-          trend="positive"
-        />
-        <KPICard
-          icon="📉"
-          label="Uscite Periodo"
-          value={data.kpi.uscite_mese}
-          format="currency"
-          trend="negative"
-        />
-        <KPICard
-          icon={data.kpi.saldo_mese >= 0 ? '✅' : '⚠️'}
-          label="Saldo Periodo"
-          value={data.kpi.saldo_mese}
-          format="currency"
-          trend={data.kpi.saldo_mese >= 0 ? 'positive' : 'negative'}
-        />
-      </section>
-
-      {/* Confronto Mese */}
-      {comparisonData && periodFilter === '1m' && (
-        <section className="comparison-section">
-          <ComparisonCard data={comparisonData} />
-        </section>
-      )}
-
-      {/* Budget Warnings */}
-      {periodFilter === '1m' && budgetWarnings.length > 0 && (
-        <section className="warnings-section">
-          <BudgetWarnings warnings={budgetWarnings} />
-        </section>
-      )}
-
-      {/* Main Content Grid */}
-      <div className="dashboard-grid">
-        {/* Trend 6 Mesi */}
-        <section className="dashboard-card wide-card">
-          <h2>📈 Trend Entrate/Uscite (6 Mesi)</h2>
-          <TrendChart data={trendData} />
-        </section>
-
-        {/* Spese per categoria */}
-        <section className="dashboard-card">
-          <h2>📊 Spese per Categoria</h2>
-          {data.spese_per_categoria.length > 0 ? (
-            <CategoryChart data={data.spese_per_categoria} />
-          ) : (
-            <div className="empty-state-small">
-              <p>Nessuna spesa registrata</p>
-            </div>
-          )}
-        </section>
-
-        {/* Top 5 Spese */}
-        {periodFilter === '1m' && (
-          <section className="dashboard-card">
-            <TopExpenses expenses={topExpenses} />
-          </section>
-        )}
-
-        {/* Ultimi movimenti */}
-        <section className="dashboard-card">
-          <h2>💸 Ultimi Movimenti</h2>
-          {data.ultimi_movimenti.length > 0 ? (
-            <RecentMovements movements={data.ultimi_movimenti} />
-          ) : (
-            <div className="empty-state-small">
-              <p>Nessun movimento ancora</p>
-            </div>
-          )}
-        </section>
-
-        {/* Obiettivi di risparmio */}
-        <section className="dashboard-card full-width">
-          <h2>🎯 Obiettivi di Risparmio</h2>
-          {data.obiettivi_risparmio.length > 0 ? (
-            <SavingsGoals goals={data.obiettivi_risparmio} />
-          ) : (
-            <div className="empty-state-small">
-              <p>Nessun obiettivo configurato</p>
-            </div>
-          )}
-        </section>
+    <div style={containerStyles}>
+      {/* Period Filter */}
+      <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+        <Button
+          variant={periodFilter === '1m' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('1m')}
+        >
+          Mese
+        </Button>
+        <Button
+          variant={periodFilter === '3m' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('3m')}
+        >
+          3 Mesi
+        </Button>
+        <Button
+          variant={periodFilter === '6m' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('6m')}
+        >
+          6 Mesi
+        </Button>
+        <Button
+          variant={periodFilter === '1y' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('1y')}
+        >
+          Anno
+        </Button>
       </div>
+
+      {/* Balance Card - Large Featured Card */}
+      <div style={balanceCardStyles}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <p style={{ fontSize: theme.typography.fontSize.sm, opacity: 0.9, marginBottom: theme.spacing.xs }}>
+              Patrimonio Totale
+            </p>
+            <h2 style={{ fontSize: theme.typography.fontSize['3xl'], fontWeight: theme.typography.fontWeight.bold, margin: 0 }}>
+              {formatCurrency(data.kpi.patrimonio_totale)}
+            </h2>
+          </div>
+          <Wallet size={40} style={{ opacity: 0.8 }} />
+        </div>
+        <div style={{ display: 'flex', gap: theme.spacing.xl, marginTop: theme.spacing.lg }}>
+          <div>
+            <p style={{ fontSize: theme.typography.fontSize.xs, opacity: 0.8 }}>Entrate</p>
+            <p style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold }}>
+              {formatCurrency(data.kpi.entrate_mese)}
+            </p>
+          </div>
+          <div>
+            <p style={{ fontSize: theme.typography.fontSize.xs, opacity: 0.8 }}>Uscite</p>
+            <p style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold }}>
+              {formatCurrency(data.kpi.uscite_mese)}
+            </p>
+          </div>
+          <div>
+            <p style={{ fontSize: theme.typography.fontSize.xs, opacity: 0.8 }}>Saldo</p>
+            <p style={{ 
+              fontSize: theme.typography.fontSize.lg, 
+              fontWeight: theme.typography.fontWeight.semibold,
+              color: data.kpi.saldo_mese >= 0 ? '#A8E6CF' : '#FFB3BA'
+            }}>
+              {formatCurrency(data.kpi.saldo_mese)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Metric Cards Grid */}
+      <div style={gridStyles}>
+        <Card hoverable padding="lg">
+          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+            <div style={{ 
+              width: '48px', 
+              height: '48px', 
+              borderRadius: theme.borderRadius.full, 
+              backgroundColor: `${theme.colors.success}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <ArrowUpCircle size={24} color={theme.colors.success} />
+            </div>
+            <div>
+              <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, margin: 0 }}>Entrate</p>
+              <p style={{ fontSize: theme.typography.fontSize.xl, fontWeight: theme.typography.fontWeight.semibold, margin: 0, color: theme.colors.text.primary }}>
+                {formatCurrency(data.kpi.entrate_mese)}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card hoverable padding="lg">
+          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+            <div style={{ 
+              width: '48px', 
+              height: '48px', 
+              borderRadius: theme.borderRadius.full, 
+              backgroundColor: `${theme.colors.danger}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <ArrowDownCircle size={24} color={theme.colors.danger} />
+            </div>
+            <div>
+              <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, margin: 0 }}>Uscite</p>
+              <p style={{ fontSize: theme.typography.fontSize.xl, fontWeight: theme.typography.fontWeight.semibold, margin: 0, color: theme.colors.text.primary }}>
+                {formatCurrency(data.kpi.uscite_mese)}
+              </p>
+            </div>
+          </div>
+        </Card>
+
+        <Card hoverable padding="lg">
+          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+            <div style={{ 
+              width: '48px', 
+              height: '48px', 
+              borderRadius: theme.borderRadius.full, 
+              backgroundColor: data.kpi.saldo_mese >= 0 ? `${theme.colors.success}20` : `${theme.colors.warning}20`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              {data.kpi.saldo_mese >= 0 ? (
+                <TrendingUp size={24} color={theme.colors.success} />
+              ) : (
+                <TrendingDown size={24} color={theme.colors.warning} />
+              )}
+            </div>
+            <div>
+              <p style={{ fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary, margin: 0 }}>Saldo</p>
+              <p style={{ 
+                fontSize: theme.typography.fontSize.xl, 
+                fontWeight: theme.typography.fontWeight.semibold, 
+                margin: 0,
+                color: data.kpi.saldo_mese >= 0 ? theme.colors.success : theme.colors.danger
+              }}>
+                {formatCurrency(data.kpi.saldo_mese)}
+              </p>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Category Spending Chart */}
+      {data.spese_per_categoria.length > 0 && (
+        <Card header="Spese per Categoria" padding="lg">
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={data.spese_per_categoria}>
+              <CartesianGrid strokeDasharray="3 3" stroke={theme.colors.border.light} />
+              <XAxis dataKey="nome" fontSize={12} stroke={theme.colors.text.secondary} />
+              <YAxis fontSize={12} stroke={theme.colors.text.secondary} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: theme.colors.surface, 
+                  border: `1px solid ${theme.colors.border.light}`,
+                  borderRadius: theme.borderRadius.md
+                }}
+                formatter={(value: number) => formatCurrency(value)}
+              />
+              <Bar dataKey="totale" fill={theme.colors.primary.DEFAULT} radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </Card>
+      )}
+
+      {/* Recent Movements */}
+      {data.ultimi_movimenti.length > 0 && (
+        <Card header="Ultimi Movimenti" padding="md">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {data.ultimi_movimenti.slice(0, 5).map((movimento: any, index: number) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: theme.spacing.md,
+                  borderBottom: index < 4 ? `1px solid ${theme.colors.border.light}` : 'none',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: theme.borderRadius.full,
+                    backgroundColor: `${getCategoryColor(movimento.categoria || 'altro')}20`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: theme.typography.fontSize.lg
+                  }}>
+                    {movimento.icona || '💸'}
+                  </div>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: theme.typography.fontWeight.medium, color: theme.colors.text.primary }}>
+                      {movimento.descrizione}
+                    </p>
+                    <p style={{ margin: 0, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+                      {new Date(movimento.data).toLocaleDateString('it-IT')}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ 
+                    margin: 0, 
+                    fontWeight: theme.typography.fontWeight.semibold,
+                    color: movimento.tipo === 'entrata' ? theme.colors.success : theme.colors.danger
+                  }}>
+                    {movimento.tipo === 'entrata' ? '+' : '-'}{formatCurrency(Math.abs(movimento.importo))}
+                  </p>
+                  {movimento.categoria && (
+                    <Badge category={movimento.categoria} size="sm" style={{ marginTop: theme.spacing.xs }}>
+                      {movimento.categoria}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Savings Goals */}
+      {data.obiettivi_risparmio.length > 0 && (
+        <Card header="Obiettivi di Risparmio" padding="lg">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+            {data.obiettivi_risparmio.map((goal: any, index: number) => (
+              <div key={index}>
+                <ProgressBar
+                  value={goal.importo_accumulato}
+                  max={goal.importo_target}
+                  label={goal.nome}
+                  showLabel
+                  variant="default"
+                />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
-  )
+  );
 }
 
-export default Dashboard
+export default Dashboard;
