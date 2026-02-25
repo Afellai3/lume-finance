@@ -33,7 +33,7 @@ Lume è un'applicazione web moderna per la gestione delle finanze personali che 
 ## 🛠️ Stack Tecnologico
 
 - **Backend**: Python + FastAPI
-- **Frontend**: React + TypeScript
+- **Frontend**: React + TypeScript + Vite
 - **Database**: SQLite (locale) → PostgreSQL (produzione)
 - **Grafici**: Chart.js + Recharts
 - **Desktop**: Electron wrapper
@@ -57,6 +57,11 @@ cd lume-finance
 # Installa dipendenze Python
 pip install -r requirements.txt
 
+# Installa dipendenze frontend
+cd frontend
+npm install
+cd ..
+
 # Inizializza database
 cd database
 sqlite3 lume.db < schema.sql
@@ -64,24 +69,54 @@ sqlite3 lume.db < seed_data.sql
 cd ..
 ```
 
-### Avvio Backend
+### 🎯 Avvio Rapido (Raccomandato)
 
+#### Windows
+```bash
+# Doppio click su:
+start.bat
+
+# Oppure da terminale:
+start.bat
+```
+
+#### macOS / Linux
+```bash
+# Rendi eseguibile lo script (solo la prima volta)
+chmod +x start.sh
+
+# Avvia
+./start.sh
+
+# Oppure usa Python (funziona ovunque)
+python start.py
+```
+
+Lo script:
+1. ✅ Verifica prerequisiti (Python + Node.js)
+2. 🚀 Avvia backend in una finestra separata
+3. 🎨 Avvia frontend in un'altra finestra
+4. 🌐 Apre automaticamente il browser su http://localhost:3000
+
+### Avvio Manuale (Alternativo)
+
+Se preferisci avviare i componenti separatamente:
+
+#### Backend
 ```bash
 # Dalla root del progetto
 python run.py
 ```
+Backend disponibile su **http://localhost:8000**  
+Documentazione API: **http://localhost:8000/docs**
 
-Il server sarà disponibile su **http://localhost:8000**
-
-Documentazione API interattiva: **http://localhost:8000/docs**
-
-### Avvio Frontend (prossimamente)
-
+#### Frontend
 ```bash
+# In un nuovo terminale
 cd frontend
-npm install
 npm run dev
 ```
+Frontend disponibile su **http://localhost:3000**
 
 ## 📚 Documentazione API
 
@@ -116,7 +151,7 @@ curl -X POST "http://localhost:8000/api/movimenti" \
   -H "Content-Type: application/json" \
   -d '{
     "movimento": {
-      "data": "2026-02-24T20:00:00",
+      "data": "2026-02-25T08:00:00",
       "importo": 50.00,
       "tipo": "uscita",
       "categoria_id": 13,
@@ -175,8 +210,13 @@ lume-finance/
 │   ├── models.py           # Modelli Pydantic
 │   └── main.py             # App FastAPI
 │
-├── frontend/               # Frontend React (in sviluppo)
+├── frontend/               # Frontend React
 │   ├── src/
+│   │   ├── components/    # Componenti riutilizzabili
+│   │   ├── pages/         # Pagine principali
+│   │   ├── types.ts       # Type definitions TypeScript
+│   │   ├── App.tsx        # App principale
+│   │   └── main.tsx       # Entry point
 │   └── package.json
 │
 ├── database/               # Database SQLite
@@ -187,7 +227,10 @@ lume-finance/
 ├── docs/                   # Documentazione
 │   └── PROJECT_STRUCTURE.md
 │
-├── run.py                  # Script avvio server
+├── start.bat               # 🚀 Avvio rapido Windows
+├── start.sh                # 🚀 Avvio rapido macOS/Linux
+├── start.py                # 🚀 Avvio rapido Python (multipiattaforma)
+├── run.py                  # Script avvio server backend
 ├── requirements.txt        # Dipendenze Python
 └── README.md              # Questo file
 ```
@@ -198,10 +241,13 @@ lume-finance/
 - [x] Motore scomposizione costi (veicoli + elettrodomestici)
 - [x] API REST completa
 - [x] Test automatici
-- [ ] Frontend React con dashboard
-- [ ] Sistema budget e analytics
+- [x] Frontend React con pagine Movimenti e Conti
+- [x] Script avvio rapido multipiattaforma
+- [ ] Dashboard Home con KPI e grafici
+- [ ] Pagina Beni (gestione auto/elettrodomestici)
+- [ ] Sistema budget e analytics avanzati
 - [ ] Simulatori investimenti e mutui
-- [ ] Grafici e KPI interattivi
+- [ ] Grafici interattivi (Chart.js)
 - [ ] Progressive Web App
 - [ ] Packaging Electron per desktop
 - [ ] Import automatico movimenti da CSV
