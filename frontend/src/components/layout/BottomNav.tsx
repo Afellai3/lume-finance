@@ -6,11 +6,12 @@ import {
   Car, 
   Target, 
   PiggyBank,
-  Building2
+  Building2,
+  Repeat
 } from 'lucide-react';
 import { theme } from '../../styles/theme';
 
-export type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni' | 'budget' | 'obiettivi';
+export type Page = 'dashboard' | 'movimenti' | 'conti' | 'ricorrenze' | 'beni' | 'budget' | 'obiettivi';
 
 interface BottomNavProps {
   currentPage: Page;
@@ -21,6 +22,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onPageChange 
   const menuItems = [
     { id: 'dashboard' as Page, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'movimenti' as Page, icon: ArrowLeftRight, label: 'Movimenti' },
+    { id: 'ricorrenze' as Page, icon: Repeat, label: 'Ricorrenze' },
     { id: 'conti' as Page, icon: Building2, label: 'Conti' },
     { id: 'budget' as Page, icon: Wallet, label: 'Budget' },
     { id: 'obiettivi' as Page, icon: Target, label: 'Obiettivi' },
