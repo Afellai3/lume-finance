@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from .routes import conti, movimenti, dashboard, beni, budget, obiettivi
+from .routes import conti, movimenti, analytics, beni, budget, obiettivi
 from .database import init_db
 
 app = FastAPI(
@@ -26,7 +26,7 @@ init_db()
 # Registra routes
 app.include_router(conti.router, prefix="/api")
 app.include_router(movimenti.router, prefix="/api")
-app.include_router(dashboard.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 app.include_router(beni.router, prefix="/api")
 app.include_router(budget.router, prefix="/api")
 app.include_router(obiettivi.router, prefix="/api")
