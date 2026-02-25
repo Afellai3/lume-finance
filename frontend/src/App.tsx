@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import './App.css'
-import Sidebar from './components/Sidebar'
+import { Layout, Page } from './components/layout'
 import Dashboard from './pages/Dashboard'
 import Movimenti from './pages/Movimenti'
 import Conti from './pages/Conti'
@@ -8,10 +7,35 @@ import Beni from './pages/Beni'
 import Budget from './pages/Budget'
 import Obiettivi from './pages/Obiettivi'
 
-type Page = 'dashboard' | 'movimenti' | 'conti' | 'beni' | 'budget' | 'obiettivi'
-
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
+
+  const pageConfig: Record<Page, { title: string; subtitle?: string }> = {
+    dashboard: { 
+      title: 'Dashboard', 
+      subtitle: 'Panoramica generale delle tue finanze' 
+    },
+    movimenti: { 
+      title: 'Movimenti', 
+      subtitle: 'Gestisci entrate e uscite' 
+    },
+    conti: { 
+      title: 'Conti Bancari', 
+      subtitle: 'I tuoi conti e saldi' 
+    },
+    beni: { 
+      title: 'Beni', 
+      subtitle: 'Veicoli ed elettrodomestici' 
+    },
+    budget: { 
+      title: 'Budget', 
+      subtitle: 'Pianifica e monitora le spese' 
+    },
+    obiettivi: { 
+      title: 'Obiettivi di Risparmio', 
+      subtitle: 'Traccia i tuoi traguardi finanziari' 
+    },
+  }
 
   const renderPage = () => {
     switch (currentPage) {
@@ -33,12 +57,14 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Sidebar currentPage={currentPage} onPageChange={setCurrentPage} />
-      <main className="main-content">
-        {renderPage()}
-      </main>
-    </div>
+    <Layout
+      currentPage={currentPage}
+      onPageChange={setCurrentPage}
+      pageTitle={pageConfig[currentPage].title}
+      pageSubtitle={pageConfig[currentPage].subtitle}
+    >
+      {renderPage()}
+    </Layout>
   )
 }
 
