@@ -54,6 +54,7 @@ lume-finance/
    - CRUD completo
    - Collegamento Conto + Categoria
    - **Budget esplicito** (nuova feature 25/02/2026)
+   - **Collegamento Obiettivi** (obiettivo_id)
    - Movimenti ricorrenti
    - **Scomposizione costi nascosti** per veicoli/elettrodomestici
 
@@ -71,11 +72,12 @@ lume-finance/
 
 5. **Obiettivi di Risparmio**
    - CRUD completo
-   - **Aggiungi/Rimuovi fondi** interattivo
+   - **Importo attuale calcolato da movimenti con obiettivo_id**
    - Progress bar globale + individuale
    - Badge priorità colorati (1-5)
    - Data target con countdown
    - Auto-completamento al 100%
+   - **Unica sorgente di verità**: tabella movimenti
 
 6. **Gestione Beni**
    - Veicoli: carburante, manutenzione, ammortamento
@@ -135,6 +137,50 @@ WHERE categoria_id = ? AND budget_id IS NULL AND tipo = 'uscita'
 
 ---
 
+## 💰 Logica Obiettivi con Movimenti (IMPORTANTE)
+
+### Fix 25 Febbraio 2026 - Pomeriggio
+
+**Problema originale**: Due sorgenti dati diverse
+- ❌ GET `/api/obiettivi` ritornava `importo_attuale` dal database (sempre 0)
+- ✅ Dashboard/Form calcolavano da movimenti (valori corretti)
+- 🐞 Risultato: Valori diversi su pagine diverse
+
+**Soluzione implementata**:
+```python
+def calculate_obiettivo_importo_attuale(conn, obiettivo_id: int) -> float:
+    """Calculate actual amount from movements linked to this obiettivo."""
+    cursor = conn.execute(
+        """
+        SELECT SUM(importo) FROM movimenti 
+        WHERE obiettivo_id = ? AND tipo = 'entrata'
+        """,
+        (obiettivo_id,)
+    )
+    result = cursor.fetchone()[0]
+    return result if result is not None else 0.0
+```
+
+**Comportamento attuale**:
+1. ✅ GET `/api/obiettivi` calcola `importo_attuale` dai movimenti
+2. ✅ PUT `/api/obiettivi/{id}` ignora `importo_attuale` se fornito
+3. ✅ POST `/api/obiettivi/{id}/aggiungi` deprecato (usa movimenti)
+4. ✅ POST `/api/obiettivi/{id}/rimuovi` deprecato (usa movimenti)
+5. ✅ **Unica sorgente di verità**: tabella movimenti
+
+**Come allocare fondi a obiettivo**:
+```json
+POST /api/movimenti
+{
+  "tipo": "entrata",
+  "importo": 100.00,
+  "obiettivo_id": 3,  // Collega a "Vacanza Estiva"
+  "descrizione": "Allocazione risparmio mensile"
+}
+```
+
+---
+
 ## 🗄️ Database Schema Chiave
 
 ### Tabelle Principali
@@ -147,7 +193,8 @@ movimenti (
   tipo TEXT CHECK(tipo IN ('entrata', 'uscita')),
   categoria_id INTEGER,
   conto_id INTEGER,
-  budget_id INTEGER,              -- ⭐ NUOVO: collegamento esplicito
+  budget_id INTEGER,              -- ⭐ Collegamento esplicito budget
+  obiettivo_id INTEGER,           -- ⭐ Collegamento obiettivo risparmio
   descrizione TEXT NOT NULL,
   ricorrente BOOLEAN DEFAULT 0,
   
@@ -160,6 +207,7 @@ movimenti (
   FOREIGN KEY (categoria_id) REFERENCES categorie(id),
   FOREIGN KEY (conto_id) REFERENCES conti(id),
   FOREIGN KEY (budget_id) REFERENCES budget(id) ON DELETE SET NULL,
+  FOREIGN KEY (obiettivo_id) REFERENCES obiettivi_risparmio(id) ON DELETE SET NULL,
   FOREIGN KEY (bene_id) REFERENCES beni(id)
 )
 
@@ -173,11 +221,11 @@ budget (
   FOREIGN KEY (categoria_id) REFERENCES categorie(id)
 )
 
-obiettivi (
+obiettivi_risparmio (
   id INTEGER PRIMARY KEY,
   nome TEXT NOT NULL,
   importo_target REAL NOT NULL,
-  importo_attuale REAL DEFAULT 0,
+  importo_attuale REAL DEFAULT 0,  -- ⚠️ DEPRECATO: non usare, calcolato da movimenti
   data_target TEXT,
   priorita INTEGER CHECK(priorita BETWEEN 1 AND 5) DEFAULT 3,
   completato BOOLEAN DEFAULT 0,
@@ -226,6 +274,7 @@ Body:
   "tipo": "uscita",
   "categoria_id": 5,
   "budget_id": 3,        // ⭐ Opzionale: override budget categoria
+  "obiettivo_id": 2,     // ⭐ Opzionale: alloca a obiettivo risparmio
   "conto_id": 1,
   "descrizione": "Spesa",
   "bene_id": 2,          // Per scomposizione
@@ -269,11 +318,23 @@ Response:
 
 ### Obiettivi
 ```http
-POST /api/obiettivi/{id}/aggiungi-fondi
-Body: {"importo": 100.00}
+GET /api/obiettivi
+Response:
+[
+  {
+    "id": 3,
+    "nome": "Vacanza Estiva",
+    "importo_target": 2500.00,
+    "importo_attuale": 800.00,  // ⭐ Calcolato da movimenti
+    "data_target": "2026-07-01",
+    "priorita": 4,
+    "completato": false
+  }
+]
 
-POST /api/obiettivi/{id}/rimuovi-fondi
-Body: {"importo": 50.00}
+# DEPRECATI (usare movimenti con obiettivo_id)
+POST /api/obiettivi/{id}/aggiungi  # → Ritorna 410 Gone
+POST /api/obiettivi/{id}/rimuovi   # → Ritorna 410 Gone
 ```
 
 ---
@@ -285,15 +346,16 @@ Body: {"importo": 50.00}
 2. ✅ Nome colonna errato `creato_il` → `data_creazione` in Obiettivi
 3. ✅ Import errato `dashboard` → `analytics` in `main.py`
 4. ✅ File seed `seed.sql` → `seed_data.sql`
+5. ✅ **Obiettivi con dati diversi**: GET `/api/obiettivi` ora calcola da movimenti
 
 ### Windows-Specific
-5. ✅ UnicodeDecodeError: Aggiunto `encoding='utf-8'` in `database.py`
-6. ✅ Schema re-creazione: Skip se DB già esistente
-7. ✅ Indici duplicati: Gestione errori `already exists`
+6. ✅ UnicodeDecodeError: Aggiunto `encoding='utf-8'` in `database.py`
+7. ✅ Schema re-creazione: Skip se DB già esistente
+8. ✅ Indici duplicati: Gestione errori `already exists`
 
 ### UI/UX
-8. ✅ CSS mancante per `BudgetForm.tsx`
-9. ✅ Struttura dati API Budget non conforme a frontend
+9. ✅ CSS mancante per `BudgetForm.tsx`
+10. ✅ Struttura dati API Budget non conforme a frontend
 
 ---
 
@@ -428,7 +490,7 @@ async def create_resource(data: ResourceCreate):
 
 ---
 
-**🔄 Ultimo aggiornamento**: 25 Febbraio 2026, 10:45 CET  
+**🔄 Ultimo aggiornamento**: 25 Febbraio 2026, 15:30 CET  
 **📊 Stato progetto**: Produzione - Sviluppo attivo  
 **✅ Test status**: Tutti i moduli funzionanti
 
