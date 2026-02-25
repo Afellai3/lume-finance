@@ -1,0 +1,135 @@
+.budget-warnings {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.warnings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+}
+
+.warnings-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.warning-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 14px;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.no-warnings {
+  text-align: center;
+  padding: 2rem;
+  color: #10b981;
+  font-size: 1rem;
+}
+
+.warnings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.warning-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid;
+}
+
+.warning-item.attenzione {
+  background: #fffbeb;
+  border-left-color: #f59e0b;
+}
+
+.warning-item.superato {
+  background: #fee2e2;
+  border-left-color: #ef4444;
+}
+
+.warning-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+}
+
+.warning-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.warning-categoria {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9375rem;
+}
+
+.warning-amounts {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.warning-amounts .separator {
+  margin: 0 0.5rem;
+}
+
+.warning-right {
+  display: flex;
+  align-items: center;
+}
+
+.warning-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.warning-badge.attenzione {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.warning-badge.superato {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+@media (max-width: 640px) {
+  .warning-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .warning-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

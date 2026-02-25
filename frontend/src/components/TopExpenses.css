@@ -1,0 +1,137 @@
+.top-expenses {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.expenses-header {
+  margin-bottom: 1.25rem;
+}
+
+.expenses-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+.no-expenses {
+  text-align: center;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.expenses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.expense-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.expense-item:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.expense-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.expense-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.expense-top {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.expense-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.expense-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.expense-description {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.9375rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expense-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.expense-separator {
+  color: #d1d5db;
+}
+
+.expense-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.expense-amount {
+  font-weight: 700;
+  color: #ef4444;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.expense-date {
+  font-size: 0.8125rem;
+  color: #9ca3af;
+}
+
+@media (max-width: 640px) {
+  .expense-item {
+    flex-wrap: wrap;
+  }
+
+  .expense-rank {
+    min-width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .expense-right {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 2.5rem;
+  }
+}
