@@ -197,8 +197,28 @@ function Conti() {
 
       {/* Form Modal - ContoForm uses different interface */}
       {showForm && (
-        <div className="form-overlay">
-          <div className="form-modal">
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            width: '90%',
+            maxWidth: '500px',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)'
+          }}>
             <ContoForm
               conto={editingConto}
               onSuccess={handleFormSuccess}
