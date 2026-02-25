@@ -151,9 +151,24 @@ async def dashboard_summary(
         }
 
 
-@router.get("/trend-mensile")
-async def trend_mensile(mesi: int = Query(6, ge=1, le=24, description="Numero mesi da visualizzare")):
-    """Ottiene il trend di entrate/uscite degli ultimi N mesi"""
+@router.get("/trend")
+async def trend_entrate_uscite(
+    period: str = Query("1m", description="Periodo: 1m, 3m, 6m, 1y")
+):
+    """Ottiene il trend di entrate/uscite per il periodo specificato
+    
+    Returns data formatted for TrendChart component:
+    [{ periodo: 'Gen 2026', entrate: 3200, uscite: 2800 }, ...]
+    """
+    
+    # Converti period in numero mesi
+    period_map = {
+        "1m": 1,
+        "3m": 3,
+        "6m": 6,
+        "1y": 12
+    }
+    mesi = period_map.get(period, 6)
     
     with get_db_connection() as conn:
         cursor = conn.execute(
@@ -172,44 +187,76 @@ async def trend_mensile(mesi: int = Query(6, ge=1, le=24, description="Numero me
         
         rows = cursor.fetchall()
         
-        # Formatta risultati
+        # Formatta risultati per TrendChart
         risultati = []
+        mesi_italiani = {
+            1: 'Gen', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'Mag', 6: 'Giu',
+            7: 'Lug', 8: 'Ago', 9: 'Set', 10: 'Ott', 11: 'Nov', 12: 'Dic'
+        }
+        
         for row in rows:
             mese_str = row[0]
             anno, mese_num = mese_str.split('-')
             
-            # Nome mese in italiano
-            data_mese = date(int(anno), int(mese_num), 1)
-            mese_nome = data_mese.strftime("%b %Y")
+            # Formato: "Gen 2026"
+            mese_nome = f"{mesi_italiani[int(mese_num)]} {anno}"
             
             risultati.append({
-                "mese": mese_str,
-                "mese_label": mese_nome,
+                "periodo": mese_nome,
                 "entrate": round(row[1], 2),
-                "uscite": round(row[2], 2),
-                "saldo": round(row[1] - row[2], 2)
+                "uscite": round(row[2], 2)
             })
         
         return risultati
 
 
-@router.get("/confronto-periodo")
-async def confronto_periodo():
-    """Confronta il mese corrente con il precedente"""
+@router.get("/comparison")
+async def comparison_period(
+    period: str = Query("month", description="Periodo: month, quarter, year")
+):
+    """Confronta il periodo corrente con il precedente
+    
+    Returns data formatted for ComparisonCard component:
+    {
+      periodo_corrente: { label, entrate, uscite, bilancio },
+      periodo_precedente: { label, entrate, uscite, bilancio }
+    }
+    """
     
     with get_db_connection() as conn:
         oggi = date.today()
         
-        # Mese corrente
-        primo_corrente = date(oggi.year, oggi.month, 1)
-        ultimo_corrente = date(oggi.year, oggi.month, monthrange(oggi.year, oggi.month)[1])
+        if period == "month":
+            # Mese corrente
+            primo_corrente = date(oggi.year, oggi.month, 1)
+            ultimo_corrente = date(oggi.year, oggi.month, monthrange(oggi.year, oggi.month)[1])
+            
+            # Mese precedente
+            data_precedente = primo_corrente - timedelta(days=1)
+            primo_precedente = date(data_precedente.year, data_precedente.month, 1)
+            ultimo_precedente = data_precedente
+            
+            label_corrente = primo_corrente.strftime("%B %Y").capitalize()
+            label_precedente = primo_precedente.strftime("%B %Y").capitalize()
+            
+        elif period == "quarter":
+            # TODO: Implementa logica trimestre
+            primo_corrente = date(oggi.year, oggi.month, 1)
+            ultimo_corrente = oggi
+            primo_precedente = primo_corrente - timedelta(days=90)
+            ultimo_precedente = primo_corrente - timedelta(days=1)
+            label_corrente = "Trimestre Corrente"
+            label_precedente = "Trimestre Precedente"
+            
+        else:  # year
+            primo_corrente = date(oggi.year, 1, 1)
+            ultimo_corrente = oggi
+            primo_precedente = date(oggi.year - 1, 1, 1)
+            ultimo_precedente = date(oggi.year - 1, 12, 31)
+            label_corrente = str(oggi.year)
+            label_precedente = str(oggi.year - 1)
         
-        # Mese precedente
-        data_precedente = primo_corrente - timedelta(days=1)
-        primo_precedente = date(data_precedente.year, data_precedente.month, 1)
-        ultimo_precedente = data_precedente
-        
-        # Dati mese corrente
+        # Dati periodo corrente
         cursor = conn.execute(
             """
             SELECT 
@@ -224,7 +271,7 @@ async def confronto_periodo():
         entrate_corrente = row_corrente[0] or 0.0
         uscite_corrente = row_corrente[1] or 0.0
         
-        # Dati mese precedente
+        # Dati periodo precedente
         cursor = conn.execute(
             """
             SELECT 
@@ -239,43 +286,29 @@ async def confronto_periodo():
         entrate_precedente = row_precedente[0] or 0.0
         uscite_precedente = row_precedente[1] or 0.0
         
-        # Calcola variazioni percentuali
-        def calcola_delta_percentuale(corrente: float, precedente: float) -> float:
-            if precedente == 0:
-                return 100.0 if corrente > 0 else 0.0
-            return round(((corrente - precedente) / precedente) * 100, 1)
-        
-        delta_entrate = calcola_delta_percentuale(entrate_corrente, entrate_precedente)
-        delta_uscite = calcola_delta_percentuale(uscite_corrente, uscite_precedente)
-        
-        saldo_corrente = entrate_corrente - uscite_corrente
-        saldo_precedente = entrate_precedente - uscite_precedente
-        delta_saldo = saldo_corrente - saldo_precedente
-        
         return {
-            "mese_corrente": {
-                "periodo": primo_corrente.strftime("%B %Y"),
+            "periodo_corrente": {
+                "label": label_corrente,
                 "entrate": round(entrate_corrente, 2),
                 "uscite": round(uscite_corrente, 2),
-                "saldo": round(saldo_corrente, 2)
+                "bilancio": round(entrate_corrente - uscite_corrente, 2)
             },
-            "mese_precedente": {
-                "periodo": primo_precedente.strftime("%B %Y"),
+            "periodo_precedente": {
+                "label": label_precedente,
                 "entrate": round(entrate_precedente, 2),
                 "uscite": round(uscite_precedente, 2),
-                "saldo": round(saldo_precedente, 2)
-            },
-            "variazioni": {
-                "entrate_percentuale": delta_entrate,
-                "uscite_percentuale": delta_uscite,
-                "saldo_differenza": round(delta_saldo, 2)
+                "bilancio": round(entrate_precedente - uscite_precedente, 2)
             }
         }
 
 
 @router.get("/budget-warnings")
 async def budget_warnings():
-    """Ottiene budget in attenzione o superati del mese corrente"""
+    """Ottiene budget in attenzione o superati del mese corrente
+    
+    Returns data formatted for BudgetWarnings component:
+    [{ categoria_nome, categoria_icona, limite, speso, percentuale }, ...]
+    """
     
     with get_db_connection() as conn:
         oggi = date.today()
@@ -288,6 +321,7 @@ async def budget_warnings():
                 b.id,
                 b.importo as budget,
                 b.periodo,
+                b.categoria_id,
                 c.nome as categoria_nome,
                 c.icona as categoria_icona,
                 c.colore as categoria_colore
@@ -303,16 +337,7 @@ async def budget_warnings():
         for row in cursor.fetchall():
             budget_dict = dict_from_row(row)
             budget_id = budget_dict['id']
-            categoria_id = None
-            
-            # Recupera categoria_id
-            cursor_cat = conn.execute(
-                "SELECT categoria_id FROM budget WHERE id = ?",
-                (budget_id,)
-            )
-            cat_row = cursor_cat.fetchone()
-            if cat_row:
-                categoria_id = cat_row[0]
+            categoria_id = budget_dict['categoria_id']
             
             # Calcola spesa con logica prioritaria
             # 1. Movimenti con budget_id esplicito
@@ -351,17 +376,12 @@ async def budget_warnings():
             
             # Solo se >= 80% (attenzione o superato)
             if percentuale >= 80:
-                stato = 'superato' if percentuale >= 100 else 'attenzione'
-                
                 warnings.append({
-                    "budget_id": budget_id,
-                    "categoria": budget_dict['categoria_nome'],
-                    "icona": budget_dict['categoria_icona'],
-                    "colore": budget_dict['categoria_colore'],
-                    "budget": round(budget_dict['budget'], 2),
-                    "spesa": round(spesa_totale, 2),
-                    "percentuale": round(percentuale, 1),
-                    "stato": stato
+                    "categoria_nome": budget_dict['categoria_nome'],
+                    "categoria_icona": budget_dict['categoria_icona'],
+                    "limite": round(budget_dict['budget'], 2),
+                    "speso": round(spesa_totale, 2),
+                    "percentuale": round(percentuale, 1)
                 })
         
         # Ordina per percentuale decrescente
@@ -371,13 +391,35 @@ async def budget_warnings():
 
 
 @router.get("/top-spese")
-async def top_spese(limit: int = Query(5, ge=1, le=20, description="Numero spese da restituire")):
-    """Ottiene le spese maggiori del mese corrente"""
+async def top_spese(
+    limit: int = Query(5, ge=1, le=20, description="Numero spese da restituire"),
+    period: str = Query("month", description="Periodo: month, 3m, 6m, year")
+):
+    """Ottiene le spese maggiori del periodo
+    
+    Returns data formatted for TopSpese component:
+    [{ id, descrizione, importo, data, categoria_nome, categoria_icona }, ...]
+    """
     
     with get_db_connection() as conn:
         oggi = date.today()
-        primo_giorno = date(oggi.year, oggi.month, 1)
-        ultimo_giorno = date(oggi.year, oggi.month, monthrange(oggi.year, oggi.month)[1])
+        
+        # Determina periodo
+        if period == "month":
+            primo_giorno = date(oggi.year, oggi.month, 1)
+            ultimo_giorno = date(oggi.year, oggi.month, monthrange(oggi.year, oggi.month)[1])
+        elif period == "3m":
+            primo_giorno = oggi - timedelta(days=90)
+            ultimo_giorno = oggi
+        elif period == "6m":
+            primo_giorno = oggi - timedelta(days=180)
+            ultimo_giorno = oggi
+        elif period == "year":
+            primo_giorno = date(oggi.year, 1, 1)
+            ultimo_giorno = oggi
+        else:
+            primo_giorno = date(oggi.year, oggi.month, 1)
+            ultimo_giorno = oggi
         
         cursor = conn.execute(
             """
