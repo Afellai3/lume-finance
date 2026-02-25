@@ -20,7 +20,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   label,
   style,
 }) => {
-  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+  // Safety checks for undefined values
+  const safeValue = value ?? 0;
+  const safeMax = max ?? 100;
+  
+  const percentage = safeMax > 0 ? Math.min(Math.max((safeValue / safeMax) * 100, 0), 100) : 0;
 
   // Auto-detect variant based on percentage if variant is 'default'
   const getVariant = () => {
@@ -83,7 +87,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           {label && <span style={{ fontWeight: theme.typography.fontWeight.medium }}>{label}</span>}
           {showLabel && (
             <span style={{ fontWeight: theme.typography.fontWeight.semibold }}>
-              {value.toFixed(0)}/{max}
+              {safeValue.toFixed(0)}/{safeMax}
             </span>
           )}
         </div>
