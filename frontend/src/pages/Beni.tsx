@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Plus, Car, Home, Wrench, Search, Filter } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { theme } from '../styles/theme';
@@ -33,7 +32,6 @@ interface Bene {
 }
 
 function Beni() {
-  const navigate = useNavigate();
   const [beni, setBeni] = useState<Bene[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,6 +39,7 @@ function Beni() {
   // Filters
   const [tipoFilter, setTipoFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBeneId, setSelectedBeneId] = useState<number | null>(null);
 
   const fetchBeni = async () => {
     setLoading(true);
@@ -79,6 +78,18 @@ function Beni() {
 
   const handleSearch = () => {
     fetchBeni();
+  };
+
+  const handleBeneClick = (beneId: number) => {
+    // TODO: Navigate to detail page when implemented
+    console.log('Clicked bene:', beneId);
+    setSelectedBeneId(beneId);
+    alert(`Dettaglio bene ${beneId} - Pagina in arrivo!`);
+  };
+
+  const handleCreateNew = () => {
+    // TODO: Navigate to create page when implemented
+    alert('Form creazione bene - In arrivo!');
   };
 
   const getTypeIcon = (tipo: string) => {
@@ -140,7 +151,7 @@ function Beni() {
         </div>
         <Button 
           variant="primary" 
-          onClick={() => navigate('/beni/nuovo')}
+          onClick={handleCreateNew}
           style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
         >
           <Plus size={18} />
@@ -263,7 +274,7 @@ function Beni() {
             </p>
             <Button 
               variant="primary" 
-              onClick={() => navigate('/beni/nuovo')}
+              onClick={handleCreateNew}
               style={{ marginTop: theme.spacing.md }}
             >
               <Plus size={18} style={{ marginRight: theme.spacing.xs }} />
@@ -285,7 +296,7 @@ function Beni() {
               key={bene.id}
               hoverable
               padding="lg"
-              onClick={() => navigate(`/beni/${bene.id}`)}
+              onClick={() => handleBeneClick(bene.id)}
               style={{ cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
