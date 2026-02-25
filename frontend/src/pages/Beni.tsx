@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Car, Home, Wrench, Search, Filter } from 'lucide-react';
+import { Plus, Car, Home, Wrench, Search } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import BeneDetail from './BeneDetail';
 import { theme } from '../styles/theme';
 
 interface Bene {
@@ -39,6 +40,9 @@ function Beni() {
   // Filters
   const [tipoFilter, setTipoFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // View state
+  const [view, setView] = useState<'list' | 'detail'>('list');
   const [selectedBeneId, setSelectedBeneId] = useState<number | null>(null);
 
   const fetchBeni = async () => {
@@ -81,15 +85,18 @@ function Beni() {
   };
 
   const handleBeneClick = (beneId: number) => {
-    // TODO: Navigate to detail page when implemented
-    console.log('Clicked bene:', beneId);
     setSelectedBeneId(beneId);
-    alert(`Dettaglio bene ${beneId} - Pagina in arrivo!`);
+    setView('detail');
+  };
+
+  const handleBackToList = () => {
+    setView('list');
+    setSelectedBeneId(null);
+    fetchBeni(); // Refresh list
   };
 
   const handleCreateNew = () => {
-    // TODO: Navigate to create page when implemented
-    alert('Form creazione bene - In arrivo!');
+    alert('Form creazione bene - Coming soon!');
   };
 
   const getTypeIcon = (tipo: string) => {
@@ -126,6 +133,12 @@ function Beni() {
     }).format(value);
   };
 
+  // Show detail view
+  if (view === 'detail' && selectedBeneId) {
+    return <BeneDetail beneId={selectedBeneId} onBack={handleBackToList} />;
+  }
+
+  // Show list view
   const filteredBeni = beni;
 
   return (
