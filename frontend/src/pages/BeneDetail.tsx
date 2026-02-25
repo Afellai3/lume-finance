@@ -10,6 +10,7 @@ import { theme } from '../styles/theme';
 interface BeneDetailProps {
   beneId: number;
   onBack: () => void;
+  onEdit?: () => void;
 }
 
 interface Bene {
@@ -60,7 +61,7 @@ interface Movimento {
   conto_nome?: string;
 }
 
-function BeneDetail({ beneId, onBack }: BeneDetailProps) {
+function BeneDetail({ beneId, onBack, onEdit }: BeneDetailProps) {
   const [bene, setBene] = useState<Bene | null>(null);
   const [tcoData, setTcoData] = useState<any>(null);
   const [costiTempo, setCostiTempo] = useState<any[]>([]);
@@ -179,15 +180,17 @@ function BeneDetail({ beneId, onBack }: BeneDetailProps) {
           Torna ai beni
         </Button>
         <div style={{ display: 'flex', gap: theme.spacing.sm }}>
-          <Button 
-            variant="secondary" 
-            size="sm"
-            onClick={() => alert('Edit - Coming soon!')}
-            style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
-          >
-            <Edit size={16} />
-            Modifica
-          </Button>
+          {onEdit && (
+            <Button 
+              variant="secondary" 
+              size="sm"
+              onClick={onEdit}
+              style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+            >
+              <Edit size={16} />
+              Modifica
+            </Button>
+          )}
           <Button 
             variant="danger" 
             size="sm"
