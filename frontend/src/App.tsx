@@ -7,6 +7,7 @@ import Beni from './pages/Beni'
 import Budget from './pages/Budget'
 import Obiettivi from './pages/Obiettivi'
 import Ricorrenze from './pages/Ricorrenze'
+import Categorie from './pages/Categorie'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -27,6 +28,10 @@ function App() {
     ricorrenze: {
       title: 'Movimenti Ricorrenti',
       subtitle: 'Automatizza entrate e uscite ricorrenti'
+    },
+    categorie: {
+      title: 'Categorie',
+      subtitle: 'Gestisci categorie personalizzate'
     },
     beni: { 
       title: 'Beni', 
@@ -52,6 +57,8 @@ function App() {
         return <Conti />
       case 'ricorrenze':
         return <Ricorrenze />
+      case 'categorie':
+        return <Categorie />
       case 'beni':
         return <Beni />
       case 'budget':
