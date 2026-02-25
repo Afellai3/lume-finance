@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routes
-from .routes import conti, beni, movimenti, analytics
+from .routes import conti, beni, movimenti, analytics, budget
 from .database import init_database
 
 app = FastAPI(
@@ -25,6 +25,7 @@ app.include_router(conti.router, prefix="/api")
 app.include_router(beni.router, prefix="/api")
 app.include_router(movimenti.router, prefix="/api")
 app.include_router(analytics.router, prefix="/api")
+app.include_router(budget.router, prefix="/api")
 
 
 @app.on_event("startup")
@@ -63,7 +64,8 @@ async def api_info():
             "conti": "/api/conti",
             "beni": "/api/beni",
             "movimenti": "/api/movimenti",
-            "analytics": "/api/analytics"
+            "analytics": "/api/analytics",
+            "budget": "/api/budget"
         },
         "features": [
             "Gestione conti bancari e portafogli",
@@ -71,6 +73,7 @@ async def api_info():
             "Movimenti con scomposizione costi automatica",
             "Calcolo dettagliato costi veicoli",
             "Calcolo consumo elettrodomestici",
-            "Dashboard analytics con KPI"
+            "Dashboard analytics con KPI",
+            "Gestione budget per categoria"
         ]
     }

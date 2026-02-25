@@ -49,3 +49,19 @@ export interface Categoria {
   colore?: string
   categoria_padre_id?: number
 }
+
+export interface Budget {
+  id?: number
+  categoria_id?: number
+  categoria_nome?: string
+  categoria_icona?: string
+  categoria_colore?: string
+  importo: number
+  periodo: string
+  data_inizio?: string
+  attivo?: boolean
+  spesa_corrente: number
+  percentuale_utilizzo: number
+  rimanente: number
+  stato?: 'ok' | 'attenzione' | 'superato'
+}

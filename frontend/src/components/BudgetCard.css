@@ -1,0 +1,161 @@
+.budget-card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px var(--shadow);
+  border-left: 4px solid var(--success);
+  transition: all 0.3s;
+}
+
+.budget-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--shadow);
+}
+
+.budget-card.stato-attenzione {
+  border-left-color: var(--warning);
+}
+
+.budget-card.stato-superato {
+  border-left-color: var(--danger);
+}
+
+.budget-card-header {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.budget-categoria {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.categoria-icon {
+  font-size: 2.5rem;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+}
+
+.budget-categoria h3 {
+  font-size: 1.25rem;
+  margin: 0 0 0.25rem 0;
+  color: var(--text-primary);
+}
+
+.budget-periodo {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-transform: capitalize;
+}
+
+.budget-importi {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.importo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.importo-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.importo-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.importo-value.speso {
+  color: var(--warning);
+}
+
+.importo-value.positive {
+  color: var(--success);
+}
+
+.importo-value.negative {
+  color: var(--danger);
+}
+
+.budget-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.budget-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.progress-bar {
+  height: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  border-radius: 6px;
+}
+
+.progress-fill.stato-ok {
+  background: var(--success);
+}
+
+.progress-fill.stato-attenzione {
+  background: var(--warning);
+}
+
+.progress-fill.stato-superato {
+  background: var(--danger);
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.progress-icon {
+  font-size: 0.75rem;
+}
+
+.progress-text {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+  .budget-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .budget-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
