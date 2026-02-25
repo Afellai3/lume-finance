@@ -1,211 +1,130 @@
-import { useState, useEffect } from 'react'
-import './Budget.css'
-import BudgetCard from '../components/BudgetCard'
-import BudgetForm from '../components/BudgetForm'
-import { Budget } from '../types'
+import { useState, useEffect } from 'react';
+import { Plus, TrendingUp, AlertCircle } from 'lucide-react';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { Badge } from '../components/ui/Badge';
+import { ProgressBar } from '../components/ui/ProgressBar';
+import { theme } from '../styles/theme';
 
-interface BudgetData {
-  budget: Budget[]
-  periodo: {
-    mese: number
-    anno: number
-  }
+interface BudgetItem {
+  id: number;
+  categoria_nome: string;
+  categoria_icona?: string;
+  importo_budget: number;
+  importo_speso: number;
+  mese: number;
+  anno: number;
+  percentuale_uso: number;
 }
 
-interface Riepilogo {
-  totale_budget: number
-  totale_speso: number
-  rimanente: number
-  percentuale_utilizzo: number
-  budget_superati: number
-}
+function Budget() {
+  const [budgets, setBudgets] = useState<BudgetItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-function BudgetPage() {
-  const [data, setData] = useState<BudgetData | null>(null)
-  const [riepilogo, setRiepilogo] = useState<Riepilogo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
-
-  const fetchData = async () => {
+  const fetchBudgets = async () => {
+    setLoading(true);
     try {
-      setError(null)
-      const [budgetRes, riepilogoRes] = await Promise.all([
-        fetch('/api/budget'),
-        fetch('/api/budget/riepilogo/mensile')
-      ])
-      
-      if (!budgetRes.ok || !riepilogoRes.ok) {
-        throw new Error('Errore caricamento dati')
+      const response = await fetch('/api/budget/corrente');
+      if (response.ok) {
+        const data = await response.json();
+        setBudgets(data);
       }
-      
-      const budgetData = await budgetRes.json()
-      const riepilogoData = await riepilogoRes.json()
-      
-      console.log('Budget data:', budgetData)
-      console.log('Riepilogo data:', riepilogoData)
-      
-      setData(budgetData)
-      setRiepilogo(riepilogoData)
     } catch (error) {
-      console.error('Errore:', error)
-      setError('Impossibile caricare i budget. Riprova più tardi.')
+      console.error('Errore:', error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchBudgets();
+  }, []);
 
-  const handleCreate = () => {
-    setEditingBudget(null)
-    setShowForm(true)
-  }
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
+  };
 
-  const handleEdit = (budget: Budget) => {
-    setEditingBudget(budget)
-    setShowForm(true)
-  }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Sei sicuro di voler eliminare questo budget?')) return
-
-    try {
-      const response = await fetch(`/api/budget/${id}`, { method: 'DELETE' })
-      if (!response.ok) throw new Error('Errore eliminazione')
-      await fetchData()
-    } catch (error) {
-      alert('Errore durante l\'eliminazione')
-    }
-  }
-
-  const handleFormClose = () => {
-    setShowForm(false)
-    setEditingBudget(null)
-  }
-
-  const handleFormSuccess = () => {
-    setShowForm(false)
-    setEditingBudget(null)
-    fetchData()
-  }
-
-  const getMeseNome = () => {
-    if (!data?.periodo) return 'Caricamento...'
-    const mesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-                  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
-    return `${mesi[data.periodo.mese - 1]} ${data.periodo.anno}`
-  }
+  const totalBudget = budgets.reduce((sum, b) => sum + b.importo_budget, 0);
+  const totalSpeso = budgets.reduce((sum, b) => sum + b.importo_speso, 0);
+  const percentualeGlobale = totalBudget > 0 ? (totalSpeso / totalBudget) * 100 : 0;
 
   if (loading) {
-    return (
-      <div className="budget-page">
-        <div className="loading">Caricamento budget...</div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="budget-page">
-        <div className="error-state">
-          <p className="error-icon">⚠️</p>
-          <h3>Errore</h3>
-          <p>{error}</p>
-          <button className="btn btn-primary" onClick={fetchData}>
-            🔄 Riprova
-          </button>
-        </div>
-      </div>
-    )
+    return <div style={{ padding: theme.spacing.xl, textAlign: 'center', color: theme.colors.text.secondary }}>Caricamento...</div>;
   }
 
   return (
-    <div className="budget-page">
-      <header className="page-header">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: theme.spacing.md }}>
         <div>
-          <h1>🎯 Budget</h1>
-          <p className="page-subtitle">Gestisci i budget per categoria - {getMeseNome()}</p>
+          <h2 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary }}>Budget Mensile</h2>
+          <p style={{ margin: `${theme.spacing.xs} 0 0 0`, color: theme.colors.text.secondary, fontSize: theme.typography.fontSize.sm }}>
+            {budgets.length} {budgets.length === 1 ? 'categoria' : 'categorie'} monitorate
+          </p>
         </div>
-        <button className="btn btn-primary" onClick={handleCreate}>
-          ➕ Nuovo Budget
-        </button>
-      </header>
+        <Button variant="primary" size="sm" leftIcon={<Plus size={16} />}>Aggiungi Budget</Button>
+      </div>
 
-      {showForm && (
-        <BudgetForm
-          budget={editingBudget}
-          onClose={handleFormClose}
-          onSuccess={handleFormSuccess}
-        />
-      )}
-
-      {riepilogo && (
-        <div className="budget-summary">
-          <div className="summary-card">
-            <span className="summary-icon">💰</span>
-            <div className="summary-content">
-              <p className="summary-label">Budget Totale</p>
-              <p className="summary-value">{riepilogo.totale_budget.toFixed(2)} €</p>
-            </div>
+      {/* Global Summary */}
+      <Card padding="lg">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
+          <div>
+            <p style={{ margin: 0, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>Budget Totale</p>
+            <h3 style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+              {formatCurrency(totalSpeso)} / {formatCurrency(totalBudget)}
+            </h3>
           </div>
-          
-          <div className="summary-card">
-            <span className="summary-icon">💸</span>
-            <div className="summary-content">
-              <p className="summary-label">Speso</p>
-              <p className="summary-value">{riepilogo.totale_speso.toFixed(2)} €</p>
-            </div>
-          </div>
-          
-          <div className="summary-card">
-            <span className="summary-icon">📉</span>
-            <div className="summary-content">
-              <p className="summary-label">Rimanente</p>
-              <p className={`summary-value ${riepilogo.rimanente < 0 ? 'negative' : 'positive'}`}>
-                {riepilogo.rimanente.toFixed(2)} €
-              </p>
-            </div>
-          </div>
-          
-          <div className="summary-card">
-            <span className="summary-icon">
-              {riepilogo.budget_superati === 0 ? '✅' : '⚠️'}
-            </span>
-            <div className="summary-content">
-              <p className="summary-label">Budget Superati</p>
-              <p className="summary-value">{riepilogo.budget_superati}</p>
-            </div>
-          </div>
+          <TrendingUp size={32} color={percentualeGlobale < 80 ? theme.colors.success : theme.colors.warning} />
         </div>
-      )}
+        <ProgressBar value={totalSpeso} max={totalBudget} showLabel variant="default" />
+      </Card>
 
-      {!data || data.budget.length === 0 ? (
-        <div className="empty-state">
-          <p className="empty-icon">🎯</p>
-          <h3>Nessun budget configurato</h3>
-          <p>Crea il tuo primo budget per monitorare le spese per categoria</p>
-          <button className="btn btn-primary" onClick={handleCreate}>
-            ➕ Crea Budget
-          </button>
-        </div>
+      {/* Budget Items */}
+      {budgets.length === 0 ? (
+        <Card padding="xl">
+          <div style={{ textAlign: 'center', padding: theme.spacing['2xl'] }}>
+            <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🎯</div>
+            <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun budget impostato</h3>
+            <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia a pianificare le tue spese mensili</p>
+            <Button variant="primary" leftIcon={<Plus size={16} />}>Crea Budget</Button>
+          </div>
+        </Card>
       ) : (
-        <div className="budget-list">
-          {data.budget.map((budget) => (
-            <BudgetCard
-              key={budget.id}
-              budget={budget}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: theme.spacing.md }}>
+          {budgets.map((budget) => (
+            <Card key={budget.id} hoverable padding="lg">
+              <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md, marginBottom: theme.spacing.md }}>
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: theme.borderRadius.full,
+                  backgroundColor: `${theme.colors.primary.DEFAULT}20`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: theme.typography.fontSize['2xl']
+                }}>
+                  {budget.categoria_icona || '💸'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: 0, fontSize: theme.typography.fontSize.base, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary }}>
+                    {budget.categoria_nome}
+                  </h4>
+                  <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
+                    {formatCurrency(budget.importo_speso)} / {formatCurrency(budget.importo_budget)}
+                  </p>
+                </div>
+                {budget.percentuale_uso >= 90 && (
+                  <AlertCircle size={20} color={theme.colors.danger} />
+                )}
+              </div>
+              <ProgressBar value={budget.importo_speso} max={budget.importo_budget} variant="default" />
+            </Card>
           ))}
         </div>
       )}
     </div>
-  )
+  );
 }
 
-export default BudgetPage
+export default Budget;
