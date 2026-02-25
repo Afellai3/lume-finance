@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -37,6 +37,14 @@ class TipoCarburante(str, Enum):
     GPL = "gpl"
 
 
+class FrequenzaRicorrenza(str, Enum):
+    """Frequenza per movimenti ricorrenti"""
+    GIORNALIERA = "giornaliera"
+    SETTIMANALE = "settimanale"
+    MENSILE = "mensile"
+    ANNUALE = "annuale"
+
+
 class Movimento(BaseModel):
     """Modello movimento finanziario"""
     id: Optional[int] = None
@@ -63,6 +71,58 @@ class Movimento(BaseModel):
                 "conto_id": 1,
                 "descrizione": "Spesa settimanale",
                 "note": "Carrefour"
+            }
+        }
+
+
+class MovimentoRicorrente(BaseModel):
+    """Modello movimento ricorrente - template per generazione automatica"""
+    id: Optional[int] = None
+    
+    # Template movimento
+    descrizione: str
+    importo: float = Field(gt=0)
+    tipo: TipoMovimento
+    
+    # Ricorrenza
+    frequenza: FrequenzaRicorrenza
+    giorno_mese: Optional[int] = Field(None, ge=1, le=31, description="Giorno del mese (1-31)")
+    giorno_settimana: Optional[int] = Field(None, ge=0, le=6, description="Giorno settimana (0=Lun, 6=Dom)")
+    mese: Optional[int] = Field(None, ge=1, le=12, description="Mese per frequenza annuale (1-12)")
+    
+    # Scheduling
+    data_inizio: date
+    data_fine: Optional[date] = None
+    prossima_data: date
+    
+    # Stato
+    attivo: bool = True
+    
+    # Collegamenti
+    conto_id: Optional[int] = None
+    categoria_id: Optional[int] = None
+    budget_id: Optional[int] = None
+    obiettivo_id: Optional[int] = None
+    bene_id: Optional[int] = None
+    
+    # Metadata
+    note: Optional[str] = None
+    data_creazione: Optional[datetime] = None
+    data_modifica: Optional[datetime] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "descrizione": "Stipendio mensile",
+                "importo": 2500.00,
+                "tipo": "entrata",
+                "frequenza": "mensile",
+                "giorno_mese": 27,
+                "data_inizio": "2026-01-01",
+                "prossima_data": "2026-02-27",
+                "conto_id": 1,
+                "categoria_id": 1,
+                "attivo": True
             }
         }
 
