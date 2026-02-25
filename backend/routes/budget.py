@@ -25,7 +25,7 @@ class BudgetUpdate(BaseModel):
 
 @router.get("")
 async def list_budget(attivi_solo: bool = True):
-    """Lista tutti i budget con calcolo spesa corrente"""
+    """Lista tutti i budget con calcolo spesa corrente e periodo"""
     with get_db_connection() as conn:
         query = """
             SELECT 
@@ -76,36 +76,38 @@ async def list_budget(attivi_solo: bool = True):
             else:
                 budget['stato'] = 'ok'
         
-        return budget_list
-
-
-@router.get("/riepilogo/{periodo}")
-async def get_riepilogo(periodo: str = 'mensile'):
-    """Ottiene riepilogo budget per periodo"""
-    with get_db_connection() as conn:
-        # Ottieni tutti i budget attivi
-        budget_list = await list_budget(attivi_solo=True)
-        
-        # Calcola totali
-        totale_budget = sum(b['importo'] for b in budget_list)
-        totale_speso = sum(b['spesa_corrente'] for b in budget_list)
-        rimanente = totale_budget - totale_speso
-        percentuale = (totale_speso / totale_budget * 100) if totale_budget > 0 else 0
-        budget_superati = sum(1 for b in budget_list if b['stato'] == 'superato')
-        
+        # Ritorna struttura con periodo
         now = datetime.now()
-        
         return {
-            'totale_budget': totale_budget,
-            'totale_speso': totale_speso,
-            'rimanente': rimanente,
-            'percentuale_utilizzo': percentuale,
-            'budget_superati': budget_superati,
+            'budget': budget_list,
             'periodo': {
                 'mese': now.month,
                 'anno': now.year
             }
         }
+
+
+@router.get("/riepilogo/{periodo}")
+async def get_riepilogo(periodo: str = 'mensile'):
+    """Ottiene riepilogo budget per periodo"""
+    # Ottieni tutti i budget attivi
+    data = await list_budget(attivi_solo=True)
+    budget_list = data['budget']
+    
+    # Calcola totali
+    totale_budget = sum(b['importo'] for b in budget_list)
+    totale_speso = sum(b['spesa_corrente'] for b in budget_list)
+    rimanente = totale_budget - totale_speso
+    percentuale = (totale_speso / totale_budget * 100) if totale_budget > 0 else 0
+    budget_superati = sum(1 for b in budget_list if b['stato'] == 'superato')
+    
+    return {
+        'totale_budget': totale_budget,
+        'totale_speso': totale_speso,
+        'rimanente': rimanente,
+        'percentuale_utilizzo': percentuale,
+        'budget_superati': budget_superati
+    }
 
 
 def get_periodo_query(periodo: str) -> str:

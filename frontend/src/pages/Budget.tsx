@@ -24,11 +24,13 @@ function BudgetPage() {
   const [data, setData] = useState<BudgetData | null>(null)
   const [riepilogo, setRiepilogo] = useState<Riepilogo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
 
   const fetchData = async () => {
     try {
+      setError(null)
       const [budgetRes, riepilogoRes] = await Promise.all([
         fetch('/api/budget'),
         fetch('/api/budget/riepilogo/mensile')
@@ -41,10 +43,14 @@ function BudgetPage() {
       const budgetData = await budgetRes.json()
       const riepilogoData = await riepilogoRes.json()
       
+      console.log('Budget data:', budgetData)
+      console.log('Riepilogo data:', riepilogoData)
+      
       setData(budgetData)
       setRiepilogo(riepilogoData)
     } catch (error) {
       console.error('Errore:', error)
+      setError('Impossibile caricare i budget. Riprova più tardi.')
     } finally {
       setLoading(false)
     }
@@ -87,6 +93,13 @@ function BudgetPage() {
     fetchData()
   }
 
+  const getMeseNome = () => {
+    if (!data?.periodo) return 'Caricamento...'
+    const mesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+                  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+    return `${mesi[data.periodo.mese - 1]} ${data.periodo.anno}`
+  }
+
   if (loading) {
     return (
       <div className="budget-page">
@@ -95,11 +108,19 @@ function BudgetPage() {
     )
   }
 
-  const getMeseNome = () => {
-    if (!data) return ''
-    const mesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-                  'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
-    return `${mesi[data.periodo.mese - 1]} ${data.periodo.anno}`
+  if (error) {
+    return (
+      <div className="budget-page">
+        <div className="error-state">
+          <p className="error-icon">⚠️</p>
+          <h3>Errore</h3>
+          <p>{error}</p>
+          <button className="btn btn-primary" onClick={fetchData}>
+            🔄 Riprova
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
