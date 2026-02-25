@@ -38,30 +38,92 @@ function Obiettivi() {
     setLoading(true);
     try {
       // Fetch obiettivi structure
+      console.log('🎯 Fetching obiettivi...');
       const obiettiviResponse = await fetch('/api/obiettivi');
+      
       if (!obiettiviResponse.ok) {
+        console.error('❌ Failed to fetch obiettivi:', obiettiviResponse.status);
         setObiettivi([]);
         setLoading(false);
         return;
       }
       
       const obiettiviData = await obiettiviResponse.json();
+      console.log('✅ Obiettivi fetched:', obiettiviData);
+      
+      if (!obiettiviData || obiettiviData.length === 0) {
+        console.log('⚠️ No obiettivi found');
+        setObiettivi([]);
+        setLoading(false);
+        return;
+      }
       
       // Fetch ALL movements to calculate actual amounts
-      const movimentiResponse = await fetch('/api/movimenti?per_page=1000');
+      // Try multiple approaches to get all movements
+      console.log('💰 Fetching movements...');
       let movimenti: Movimento[] = [];
       
-      if (movimentiResponse.ok) {
-        const movimentiData = await movimentiResponse.json();
-        movimenti = movimentiData.items || movimentiData || [];
+      // Try approach 1: without pagination
+      try {
+        const movimentiResponse = await fetch('/api/movimenti');
+        if (movimentiResponse.ok) {
+          const movimentiData = await movimentiResponse.json();
+          console.log('📊 Movements API response:', movimentiData);
+          
+          // Handle different response structures
+          if (Array.isArray(movimentiData)) {
+            movimenti = movimentiData;
+          } else if (movimentiData.items && Array.isArray(movimentiData.items)) {
+            movimenti = movimentiData.items;
+          } else if (movimentiData.movimenti && Array.isArray(movimentiData.movimenti)) {
+            movimenti = movimentiData.movimenti;
+          }
+          
+          console.log(`✅ Fetched ${movimenti.length} movements`);
+        }
+      } catch (err) {
+        console.error('❌ Error fetching movements:', err);
       }
+      
+      // If we got no movements, try with explicit high limit
+      if (movimenti.length === 0) {
+        try {
+          console.log('🔄 Trying with limit=10000...');
+          const movimentiResponse2 = await fetch('/api/movimenti?limit=10000');
+          if (movimentiResponse2.ok) {
+            const movimentiData2 = await movimentiResponse2.json();
+            if (Array.isArray(movimentiData2)) {
+              movimenti = movimentiData2;
+            } else if (movimentiData2.items) {
+              movimenti = movimentiData2.items;
+            }
+            console.log(`✅ Fetched ${movimenti.length} movements with limit`);
+          }
+        } catch (err) {
+          console.error('❌ Error fetching movements with limit:', err);
+        }
+      }
+      
+      console.log('🔍 Total movements to process:', movimenti.length);
+      console.log('🔍 Movements with obiettivo_id:', movimenti.filter(m => m.obiettivo_id).length);
       
       // Calculate importo_attuale for each obiettivo by summing movements
       const obiettiviWithAmounts = obiettiviData.map((obiettivo: Obiettivo) => {
         // Sum all income movements (entrata) linked to this obiettivo
-        const importoCalcolato = movimenti
-          .filter((m: Movimento) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata')
-          .reduce((sum: number, m: Movimento) => sum + (m.importo || 0), 0);
+        const relatedMovements = movimenti.filter(
+          (m: Movimento) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata'
+        );
+        
+        const importoCalcolato = relatedMovements.reduce(
+          (sum: number, m: Movimento) => sum + (m.importo || 0),
+          0
+        );
+        
+        console.log(`📈 Obiettivo "${obiettivo.nome}" (ID: ${obiettivo.id}):`, {
+          relatedMovements: relatedMovements.length,
+          importoCalcolato,
+          target: obiettivo.importo_target
+        });
         
         return {
           ...obiettivo,
@@ -70,9 +132,11 @@ function Obiettivi() {
         };
       });
       
+      console.log('✅ Final obiettivi with calculated amounts:', obiettiviWithAmounts);
       setObiettivi(obiettiviWithAmounts);
+      
     } catch (error) {
-      console.error('Errore:', error);
+      console.error('❌ Error in fetchObiettivi:', error);
       setObiettivi([]);
     } finally {
       setLoading(false);
@@ -100,7 +164,10 @@ function Obiettivi() {
 
   const handleFormSuccess = () => {
     handleFormClose();
-    fetchObiettivi();
+    // Reload obiettivi after a short delay to ensure backend has processed
+    setTimeout(() => {
+      fetchObiettivi();
+    }, 500);
   };
 
   const handleDelete = async (id: number) => {
