@@ -20,6 +20,7 @@
 - 🏦 Collegamento conti bancari
 - 🏷️ Categorizzazione automatica
 - 🎯 **Budget esplicito prioritario** (nuova feature!)
+- 💰 **Allocazione a obiettivi di risparmio** (campo obiettivo_id)
 - 🔄 Supporto movimenti ricorrenti
 - 📝 Descrizioni e note
 
@@ -59,9 +60,10 @@ Funzionalità **unica** per analizzare i costi reali di:
   - 🔴 **Superato**: ≥ 100% utilizzo
 - 📊 Riepilogo globale: totale budget, speso, rimanente
 
-### 💎 Obiettivi di Risparmio
+### 💰 Obiettivi di Risparmio
 - 🎯 Definizione target con data scadenza
-- ➕ **Aggiungi/Rimuovi fondi** interattivo con prompt
+- 💵 **Allocazione fondi tramite movimenti** (campo obiettivo_id)
+- 📈 **Calcolo automatico** da movimenti in entrata collegati
 - 📊 Progress bar globale e per obiettivo
 - 🏷️ Badge priorità colorati:
   - 🔴 Critica (5)
@@ -102,7 +104,7 @@ lume-finance/
 │   │   ├── movimenti.py    # CRUD movimenti + scomposizione
 │   │   ├── conti.py        # Gestione conti
 │   │   ├── budget.py       # Budget con logica prioritaria
-│   │   ├── obiettivi.py    # Obiettivi risparmio
+│   │   ├── obiettivi.py    # Obiettivi risparmio (calcolo da movimenti)
 │   │   └── beni.py         # Veicoli ed elettrodomestici
 │   ├── database.py         # SQLite connection + migrations
 │   └── main.py             # FastAPI app
@@ -189,7 +191,8 @@ categorie (id, nome, tipo, icona, colore)
 -- Movimenti finanziari
 movimenti (
   id, data, importo, tipo, categoria_id, conto_id, 
-  budget_id,  -- ⭐ Collegamento esplicito budget
+  budget_id,       -- ⭐ Collegamento esplicito budget
+  obiettivo_id,    -- ⭐ Allocazione a obiettivo risparmio
   descrizione, ricorrente,
   bene_id, km_percorsi, ore_utilizzo,  -- Scomposizione costi
   scomposizione_json
@@ -199,8 +202,8 @@ movimenti (
 budget (id, categoria_id, importo, periodo, data_inizio, attivo)
 
 -- Obiettivi risparmio
-obiettivi (
-  id, nome, importo_target, importo_attuale, 
+obiettivi_risparmio (
+  id, nome, importo_target, importo_attuale,  -- importo_attuale DEPRECATO
   data_target, priorita, completato
 )
 
@@ -211,6 +214,17 @@ beni (
   elettrodomestico_potenza, elettrodomestico_ore_medie_giorno
 )
 ```
+
+### ⚠️ Nota Importante: Campo `importo_attuale` Deprecato
+
+Il campo `importo_attuale` in `obiettivi_risparmio` **NON viene più utilizzato**. L'importo è **calcolato automaticamente** dalla somma dei movimenti in entrata con `obiettivo_id`:
+
+```sql
+SELECT SUM(importo) FROM movimenti 
+WHERE obiettivo_id = ? AND tipo = 'entrata'
+```
+
+**Motivo**: Garantisce coerenza dati - unica fonte di verità è la tabella movimenti.
 
 ### Migrations
 Le migrations vengono eseguite automaticamente all'avvio:
@@ -244,18 +258,18 @@ DELETE /api/movimenti/{id}             # Elimina movimento
 GET    /api/movimenti/categorie        # Lista categorie
 ```
 
-**Payload Movimento con Budget Esplicito:**
+**Payload Movimento con Budget e Obiettivo:**
 ```json
 {
   "data": "2026-02-25",
   "importo": 50.00,
-  "tipo": "uscita",
+  "tipo": "entrata",
   "categoria_id": 5,
   "budget_id": 3,        // ⭐ Budget esplicito (priorità)
+  "obiettivo_id": 2,     // ⭐ Alloca a "Vacanza Estiva"
   "conto_id": 1,
-  "descrizione": "Spesa speciale",
-  "bene_id": 2,          // Opzionale: per scomposizione
-  "km_percorsi": 150     // Se bene_id è veicolo
+  "descrizione": "Allocazione risparmio mensile",
+  "bene_id": null        // Non necessario per obiettivi
 }
 ```
 
@@ -271,13 +285,17 @@ GET    /api/budget/riepilogo/{periodo} # Riepilogo (mensile/annuale)
 
 ### Obiettivi
 ```http
-GET    /api/obiettivi                  # Lista obiettivi
+GET    /api/obiettivi                  # Lista obiettivi (importo calcolato)
 POST   /api/obiettivi                  # Crea obiettivo
 GET    /api/obiettivi/{id}             # Dettaglio obiettivo
 PUT    /api/obiettivi/{id}             # Aggiorna obiettivo
 DELETE /api/obiettivi/{id}             # Elimina obiettivo
-POST   /api/obiettivi/{id}/aggiungi-fondi  # Aggiungi importo
-POST   /api/obiettivi/{id}/rimuovi-fondi   # Rimuovi importo
+```
+
+**⚠️ Endpoints Deprecati (ritornano 410 Gone):**
+```http
+POST   /api/obiettivi/{id}/aggiungi    # Usa movimenti con obiettivo_id
+POST   /api/obiettivi/{id}/rimuovi     # Elimina/modifica movimenti
 ```
 
 ### Conti
@@ -313,7 +331,7 @@ DELETE /api/beni/{id}                  # Elimina bene
 ### Key Components
 ```typescript
 // Form Components
-MovimentoForm.tsx         // Form con budget_id + scomposizione
+MovimentoForm.tsx         // Form con budget_id + obiettivo_id + scomposizione
 ContoForm.tsx
 BeneForm.tsx              // Form dinamico veicolo/elettrodomestico
 BudgetForm.tsx
@@ -321,7 +339,7 @@ ObiettivoForm.tsx
 
 // UI Components
 ConfirmDialog.tsx         // Dialog conferma eliminazione
-PromptDialog.tsx          // Dialog input importo (obiettivi)
+PromptDialog.tsx          // Dialog input importo (deprecato)
 ```
 
 ---
@@ -349,7 +367,28 @@ WHERE categoria_id = ? AND budget_id IS NULL AND tipo = 'uscita'
 - Le spese con `budget_id` esplicito scalano da quel budget
 - Le spese senza `budget_id` scalano dal budget della categoria
 
-### 2. Scomposizione Automatica Costi
+### 2. Obiettivi con Calcolo da Movimenti
+
+**NON si gestiscono più con endpoint dedicati**, ma tramite movimenti:
+
+```json
+// Allocare 100€ a "Vacanza Estiva" (id: 3)
+POST /api/movimenti
+{
+  "tipo": "entrata",
+  "importo": 100.00,
+  "obiettivo_id": 3,
+  "conto_id": 1,
+  "descrizione": "Risparmio mensile per vacanza"
+}
+```
+
+L'endpoint GET `/api/obiettivi` calcola automaticamente:
+```python
+importo_attuale = SUM(importo) WHERE obiettivo_id = 3 AND tipo = 'entrata'
+```
+
+### 3. Scomposizione Automatica Costi
 
 **Veicolo** (esempio: Fiat 500):
 ```json
@@ -399,6 +438,7 @@ Creando un movimento con `ore_utilizzo: 10`:
 - ✅ Nome file `seed.sql` → `seed_data.sql`
 - ✅ Encoding UTF-8 per Windows (fix UnicodeDecodeError)
 - ✅ Schema già esistente: skip se DB presente
+- ✅ **Obiettivi con valori diversi**: GET `/api/obiettivi` ora calcola da movimenti
 
 ---
 
