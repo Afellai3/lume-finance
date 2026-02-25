@@ -56,3 +56,21 @@ export interface ScomposizioneCosto {
   metodo_calcolo?: string
   parametri_calcolo?: string
 }
+
+export interface DashboardData {
+  periodo: {
+    anno: number
+    mese: number
+    mese_nome: string
+  }
+  kpi: {
+    patrimonio_totale: number
+    entrate_mese: number
+    uscite_mese: number
+    saldo_mese: number
+  }
+  spese_per_categoria: any[]
+  ultimi_movimenti: any[]
+  obiettivi_risparmio: any[]
+  budget_vs_speso: any[]
+}
