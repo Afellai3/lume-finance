@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Target, Calendar, TrendingUp, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Target, CheckCircle2, Edit2, Trash2, Eye } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { ProgressBar } from '../components/ui/ProgressBar';
+import ObiettivoCard from '../components/obiettivi/ObiettivoCard';
+import ObiettivoForm from '../components/obiettivi/ObiettivoForm';
+import ContributiList from '../components/obiettivi/ContributiList';
 import { theme } from '../styles/theme';
-import ObiettivoForm from '../components/ObiettivoForm';
 
 interface Obiettivo {
   id: number;
@@ -13,357 +13,399 @@ interface Obiettivo {
   descrizione?: string;
   importo_target: number;
   importo_attuale: number;
-  importo_corrente?: number;
+  percentuale_completamento: number;
   data_target?: string;
-  data_scadenza?: string;
-  completato: boolean;
+  giorni_rimanenti?: number;
   priorita: number;
-  icona?: string;
+  completato: boolean;
+  velocita_risparmio_mensile: number;
+  categoria_nome?: string;
+  categoria_icona?: string;
 }
 
-interface Movimento {
+interface Contributo {
   id: number;
+  data: string;
   importo: number;
-  tipo: string;
-  obiettivo_id?: number;
+  descrizione: string;
+  conto_nome?: string;
 }
+
+type View = 'list' | 'create' | 'edit' | 'contributi';
 
 function Obiettivi() {
   const [obiettivi, setObiettivi] = useState<Obiettivo[]>([]);
+  const [contributi, setContributi] = useState<Contributo[]>([]);
+  const [contributiTotale, setContributiTotale] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingObiettivo, setEditingObiettivo] = useState<Obiettivo | null>(null);
+  const [error, setError] = useState('');
+  
+  // Filter
+  const [showCompleted, setShowCompleted] = useState(false);
+  
+  // View state
+  const [view, setView] = useState<View>('list');
+  const [selectedObiettivoId, setSelectedObiettivoId] = useState<number | null>(null);
 
-  const fetchObiettivi = async () => {
+  const fetchData = async () => {
     setLoading(true);
+    setError('');
+    
     try {
-      // Fetch obiettivi structure
-      console.log('🎯 Fetching obiettivi...');
-      const obiettiviResponse = await fetch('/api/obiettivi');
+      const endpoint = showCompleted ? '/api/obiettivi/tutti' : '/api/obiettivi';
+      const response = await fetch(endpoint);
       
-      if (!obiettiviResponse.ok) {
-        console.error('❌ Failed to fetch obiettivi:', obiettiviResponse.status);
-        setObiettivi([]);
-        setLoading(false);
-        return;
-      }
+      if (!response.ok) throw new Error('Errore caricamento obiettivi');
       
-      const obiettiviData = await obiettiviResponse.json();
-      console.log('✅ Obiettivi fetched:', obiettiviData);
-      
-      if (!obiettiviData || obiettiviData.length === 0) {
-        console.log('⚠️ No obiettivi found');
-        setObiettivi([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Fetch ALL movements to calculate actual amounts
-      // Try multiple approaches to get all movements
-      console.log('💰 Fetching movements...');
-      let movimenti: Movimento[] = [];
-      
-      // Try approach 1: without pagination
-      try {
-        const movimentiResponse = await fetch('/api/movimenti');
-        if (movimentiResponse.ok) {
-          const movimentiData = await movimentiResponse.json();
-          console.log('📊 Movements API response:', movimentiData);
-          
-          // Handle different response structures
-          if (Array.isArray(movimentiData)) {
-            movimenti = movimentiData;
-          } else if (movimentiData.items && Array.isArray(movimentiData.items)) {
-            movimenti = movimentiData.items;
-          } else if (movimentiData.movimenti && Array.isArray(movimentiData.movimenti)) {
-            movimenti = movimentiData.movimenti;
-          }
-          
-          console.log(`✅ Fetched ${movimenti.length} movements`);
-        }
-      } catch (err) {
-        console.error('❌ Error fetching movements:', err);
-      }
-      
-      // If we got no movements, try with explicit high limit
-      if (movimenti.length === 0) {
-        try {
-          console.log('🔄 Trying with limit=10000...');
-          const movimentiResponse2 = await fetch('/api/movimenti?limit=10000');
-          if (movimentiResponse2.ok) {
-            const movimentiData2 = await movimentiResponse2.json();
-            if (Array.isArray(movimentiData2)) {
-              movimenti = movimentiData2;
-            } else if (movimentiData2.items) {
-              movimenti = movimentiData2.items;
-            }
-            console.log(`✅ Fetched ${movimenti.length} movements with limit`);
-          }
-        } catch (err) {
-          console.error('❌ Error fetching movements with limit:', err);
-        }
-      }
-      
-      console.log('🔍 Total movements to process:', movimenti.length);
-      console.log('🔍 Movements with obiettivo_id:', movimenti.filter(m => m.obiettivo_id).length);
-      
-      // Calculate importo_attuale for each obiettivo by summing movements
-      const obiettiviWithAmounts = obiettiviData.map((obiettivo: Obiettivo) => {
-        // Sum all income movements (entrata) linked to this obiettivo
-        const relatedMovements = movimenti.filter(
-          (m: Movimento) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata'
-        );
-        
-        const importoCalcolato = relatedMovements.reduce(
-          (sum: number, m: Movimento) => sum + (m.importo || 0),
-          0
-        );
-        
-        console.log(`📈 Obiettivo "${obiettivo.nome}" (ID: ${obiettivo.id}):`, {
-          relatedMovements: relatedMovements.length,
-          importoCalcolato,
-          target: obiettivo.importo_target
-        });
-        
-        return {
-          ...obiettivo,
-          importo_attuale: importoCalcolato,
-          importo_corrente: importoCalcolato
-        };
-      });
-      
-      console.log('✅ Final obiettivi with calculated amounts:', obiettiviWithAmounts);
-      setObiettivi(obiettiviWithAmounts);
-      
-    } catch (error) {
-      console.error('❌ Error in fetchObiettivi:', error);
-      setObiettivi([]);
+      const data = await response.json();
+      setObiettivi(data || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchObiettivi();
-  }, []);
-
-  const handleCreate = () => {
-    setEditingObiettivo(null);
-    setShowForm(true);
-  };
-
-  const handleEdit = (obiettivo: Obiettivo) => {
-    setEditingObiettivo(obiettivo);
-    setShowForm(true);
-  };
-
-  const handleFormClose = () => {
-    setShowForm(false);
-    setEditingObiettivo(null);
-  };
-
-  const handleFormSuccess = () => {
-    handleFormClose();
-    // Reload obiettivi after a short delay to ensure backend has processed
-    setTimeout(() => {
-      fetchObiettivi();
-    }, 500);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Eliminare questo obiettivo?')) return;
+  const fetchContributi = async (obiettivoId: number) => {
     try {
-      const response = await fetch(`/api/obiettivi/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchObiettivi();
-    } catch (error) {
-      alert('Errore durante l\'eliminazione');
+      const response = await fetch(`/api/obiettivi/${obiettivoId}/contributi`);
+      if (!response.ok) throw new Error('Errore caricamento contributi');
+      
+      const data = await response.json();
+      setContributi(data.contributi || []);
+      setContributiTotale(data.totale || 0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore caricamento contributi');
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
+  useEffect(() => {
+    if (view === 'list') {
+      fetchData();
+    }
+  }, [view, showCompleted]);
+
+  const handleCreateNew = () => {
+    setSelectedObiettivoId(null);
+    setView('create');
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return null;
-    return new Date(dateString).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
+  const handleEdit = (obiettivoId: number) => {
+    setSelectedObiettivoId(obiettivoId);
+    setView('edit');
   };
 
-  const getDaysRemaining = (dateString?: string) => {
-    if (!dateString) return null;
-    const today = new Date();
-    const deadline = new Date(dateString);
-    const diffTime = deadline.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
+  const handleViewContributi = async (obiettivoId: number) => {
+    setSelectedObiettivoId(obiettivoId);
+    await fetchContributi(obiettivoId);
+    setView('contributi');
   };
 
-  const calculatePercentage = (current: number, target: number): number => {
-    const safeCurrent = current ?? 0;
-    const safeTarget = target ?? 0;
+  const handleMarkCompleted = async (obiettivoId: number, completed: boolean) => {
+    try {
+      const response = await fetch(`/api/obiettivi/${obiettivoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ completato: completed })
+      });
+      
+      if (!response.ok) throw new Error('Errore aggiornamento obiettivo');
+      
+      fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Errore');
+    }
+  };
+
+  const handleDelete = async (obiettivoId: number) => {
+    if (!confirm('Eliminare questo obiettivo?')) return;
     
-    if (safeTarget === 0) return 0;
-    return (safeCurrent / safeTarget) * 100;
+    try {
+      const response = await fetch(`/api/obiettivi/${obiettivoId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Errore eliminazione');
+      
+      fetchData();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Errore eliminazione');
+    }
   };
 
-  if (loading) {
-    return <div style={{ padding: theme.spacing.xl, textAlign: 'center', color: theme.colors.text.secondary }}>Caricamento...</div>;
+  const handleFormSuccess = () => {
+    setView('list');
+    setSelectedObiettivoId(null);
+  };
+
+  const handleFormCancel = () => {
+    setView('list');
+    setSelectedObiettivoId(null);
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('it-IT', { 
+      style: 'currency', 
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+
+  // Show form view
+  if (view === 'create' || view === 'edit') {
+    return (
+      <ObiettivoForm 
+        obiettivoId={view === 'edit' ? selectedObiettivoId || undefined : undefined}
+        onSuccess={handleFormSuccess}
+        onCancel={handleFormCancel}
+      />
+    );
   }
 
-  const obiettiviAttivi = obiettivi.filter(o => !o.completato);
-  const obiettiviCompletati = obiettivi.filter(o => o.completato);
-
-  return (
-    <>
+  // Show contributi view
+  if (view === 'contributi') {
+    const obiettivo = obiettivi.find(o => o.id === selectedObiettivoId);
+    
+    return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: theme.spacing.md }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary }}>Obiettivi di Risparmio</h2>
-            <p style={{ margin: `${theme.spacing.xs} 0 0 0`, color: theme.colors.text.secondary, fontSize: theme.typography.fontSize.sm }}>
-              {obiettiviAttivi.length} attivi • {obiettiviCompletati.length} completati
-            </p>
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: theme.typography.fontSize['2xl'], 
+              fontWeight: theme.typography.fontWeight.bold, 
+              color: theme.colors.text.primary 
+            }}>
+              Contributi: {obiettivo?.nome}
+            </h1>
           </div>
-          <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreate}>
-            Nuovo Obiettivo
+          <Button 
+            variant="secondary" 
+            onClick={() => setView('list')}
+          >
+            Indietro
           </Button>
         </div>
+        
+        <ContributiList contributi={contributi} totale={contributiTotale} />
+      </div>
+    );
+  }
 
-        {/* Empty State */}
-        {obiettivi.length === 0 ? (
-          <Card padding="xl">
-            <div style={{ textAlign: 'center', padding: theme.spacing['2xl'] }}>
-              <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🎯</div>
-              <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun obiettivo impostato</h3>
-              <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Definisci i tuoi traguardi finanziari</p>
-              <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreate}>
-                Crea Obiettivo
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <>
-            {/* Active Goals */}
-            {obiettiviAttivi.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary, marginBottom: theme.spacing.md }}>
-                  In Corso
-                </h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
-                  {obiettiviAttivi.map((goal) => {
-                    const importoCurrent = goal.importo_attuale ?? goal.importo_corrente ?? 0;
-                    const percentuale = calculatePercentage(importoCurrent, goal.importo_target);
-                    const daysRemaining = getDaysRemaining(goal.data_target || goal.data_scadenza);
-                    
-                    return (
-                      <Card key={goal.id} hoverable padding="lg">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: theme.spacing.md }}>
-                          <div style={{ display: 'flex', gap: theme.spacing.md, alignItems: 'center', flex: 1 }}>
-                            <div style={{
-                              width: '56px',
-                              height: '56px',
-                              borderRadius: theme.borderRadius.full,
-                              backgroundColor: `${theme.colors.primary.DEFAULT}20`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: theme.typography.fontSize['3xl']
-                            }}>
-                              {goal.icona || '🎯'}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <h4 style={{ margin: 0, fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary }}>
-                                {goal.nome}
-                              </h4>
-                              {goal.descrizione && (
-                                <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                                  {goal.descrizione}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
-                            <div style={{ textAlign: 'right' }}>
-                              <p style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.primary.DEFAULT }}>
-                                {percentuale.toFixed(0)}%
-                              </p>
-                              {daysRemaining !== null && (
-                                <Badge variant={daysRemaining < 30 ? 'warning' : 'info'} size="sm" style={{ marginTop: theme.spacing.xs }}>
-                                  <Calendar size={12} style={{ marginRight: theme.spacing.xs }} />
-                                  {daysRemaining > 0 ? `${daysRemaining}g` : 'Scaduto'}
-                                </Badge>
-                              )}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.xs }}>
-                              <Button variant="ghost" size="sm" leftIcon={<Edit2 size={14} />} onClick={() => handleEdit(goal)} />
-                              <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => handleDelete(goal.id)} />
-                            </div>
-                          </div>
-                        </div>
-                        <ProgressBar 
-                          value={importoCurrent} 
-                          max={goal.importo_target || 1} 
-                          label={`${formatCurrency(importoCurrent)} / ${formatCurrency(goal.importo_target)}`}
-                          showLabel
-                          variant="default"
-                        />
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+  // Calculate summary
+  const totaleTarget = obiettivi.reduce((sum, o) => sum + o.importo_target, 0);
+  const totaleRaggiunto = obiettivi.reduce((sum, o) => sum + o.importo_attuale, 0);
+  const percentualeGlobale = totaleTarget > 0 ? (totaleRaggiunto / totaleTarget * 100) : 0;
+  const obiettiviCompletati = obiettivi.filter(o => o.completato).length;
 
-            {/* Completed Goals */}
-            {obiettiviCompletati.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: theme.typography.fontSize.lg, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary, marginBottom: theme.spacing.md }}>
-                  Completati
-                </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: theme.spacing.md }}>
-                  {obiettiviCompletati.map((goal) => (
-                    <Card key={goal.id} hoverable padding="lg">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md }}>
-                        <div style={{
-                          width: '48px',
-                          height: '48px',
-                          borderRadius: theme.borderRadius.full,
-                          backgroundColor: `${theme.colors.success}20`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: theme.typography.fontSize['2xl']
-                        }}>
-                          ✅
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: 0, fontSize: theme.typography.fontSize.base, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary }}>
-                            {goal.nome}
-                          </h4>
-                          <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.success }}>
-                            {formatCurrency(goal.importo_target || 0)}
-                          </p>
-                        </div>
-                        <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => handleDelete(goal.id)} />
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
+  // Show list view
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md }}>
+        <div>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: theme.typography.fontSize['2xl'], 
+            fontWeight: theme.typography.fontWeight.bold, 
+            color: theme.colors.text.primary 
+          }}>
+            🎯 Obiettivi di Risparmio
+          </h1>
+          <p style={{ 
+            margin: `${theme.spacing.xs} 0 0 0`, 
+            fontSize: theme.typography.fontSize.sm, 
+            color: theme.colors.text.secondary 
+          }}>
+            Traccia i tuoi obiettivi finanziari
+          </p>
+        </div>
+        <Button 
+          variant="primary" 
+          onClick={handleCreateNew}
+          style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+        >
+          <Plus size={18} />
+          Nuovo Obiettivo
+        </Button>
       </div>
 
-      {/* Form Modal */}
-      {showForm && (
-        <ObiettivoForm
-          obiettivo={editingObiettivo}
-          onClose={handleFormClose}
-          onSuccess={handleFormSuccess}
-        />
+      {/* Summary Dashboard */}
+      {obiettivi.length > 0 && (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: theme.spacing.md
+        }}>
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Obiettivi Attivi
+            </div>
+            <div style={{ fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+              {obiettivi.filter(o => !o.completato).length}
+            </div>
+          </Card>
+          
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Completati
+            </div>
+            <div style={{ fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.success }}>
+              {obiettiviCompletati}
+            </div>
+          </Card>
+          
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Risparmiato
+            </div>
+            <div style={{ fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+              {formatCurrency(totaleRaggiunto)}
+            </div>
+          </Card>
+          
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Target Totale
+            </div>
+            <div style={{ fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+              {formatCurrency(totaleTarget)}
+            </div>
+          </Card>
+        </div>
       )}
-    </>
+
+      {/* Filter */}
+      <Card padding="md">
+        <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+          <div style={{ fontSize: theme.typography.fontSize.sm, fontWeight: theme.typography.fontWeight.medium }}>
+            Mostra:
+          </div>
+          <Button
+            variant={!showCompleted ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setShowCompleted(false)}
+          >
+            Solo Attivi
+          </Button>
+          <Button
+            variant={showCompleted ? 'primary' : 'secondary'}
+            size="sm"
+            onClick={() => setShowCompleted(true)}
+          >
+            Tutti
+          </Button>
+        </div>
+      </Card>
+
+      {/* Loading state */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: theme.spacing.xl }}>
+          <div style={{ fontSize: '48px', marginBottom: theme.spacing.md }}>⏳</div>
+          <p style={{ color: theme.colors.text.secondary }}>Caricamento obiettivi...</p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <Card padding="xl">
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: theme.colors.danger, marginBottom: theme.spacing.lg }}>{error}</p>
+            <Button variant="primary" onClick={fetchData}>Riprova</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && obiettivi.length === 0 && (
+        <Card padding="xl">
+          <div style={{ 
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: theme.spacing.md
+          }}>
+            <div style={{ fontSize: '64px' }}>🎯</div>
+            <h3 style={{ margin: 0, color: theme.colors.text.primary }}>
+              Nessun obiettivo configurato
+            </h3>
+            <p style={{ margin: 0, color: theme.colors.text.secondary }}>
+              Inizia a pianificare i tuoi obiettivi di risparmio
+            </p>
+            <Button 
+              variant="primary" 
+              onClick={handleCreateNew}
+              style={{ marginTop: theme.spacing.md }}
+            >
+              <Plus size={18} style={{ marginRight: theme.spacing.xs }} />
+              Crea Primo Obiettivo
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Obiettivi grid */}
+      {!loading && !error && obiettivi.length > 0 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gap: theme.spacing.lg
+        }}>
+          {obiettivi.map((obiettivo) => (
+            <div key={obiettivo.id} style={{ position: 'relative' }}>
+              <ObiettivoCard 
+                obiettivo={obiettivo}
+                onClick={() => handleViewContributi(obiettivo.id)}
+              />
+              
+              {/* Quick Actions */}
+              <div style={{ 
+                position: 'absolute', 
+                top: theme.spacing.sm, 
+                right: theme.spacing.sm,
+                display: 'flex',
+                gap: theme.spacing.xs
+              }}>
+                {!obiettivo.completato && obiettivo.percentuale_completamento >= 100 && (
+                  <Button
+                    variant="success"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkCompleted(obiettivo.id, true);
+                    }}
+                    style={{ padding: theme.spacing.xs }}
+                  >
+                    <CheckCircle2 size={16} />
+                  </Button>
+                )}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(obiettivo.id);
+                  }}
+                  style={{ padding: theme.spacing.xs }}
+                >
+                  <Edit2 size={16} />
+                </Button>
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(obiettivo.id);
+                  }}
+                  style={{ padding: theme.spacing.xs }}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,227 +1,373 @@
 import { useState, useEffect } from 'react';
-import { Plus, TrendingUp, AlertCircle, Edit2, Trash2 } from 'lucide-react';
+import { Plus, AlertTriangle, TrendingUp, CheckCircle } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Badge } from '../components/ui/Badge';
-import { ProgressBar } from '../components/ui/ProgressBar';
+import BudgetCard from '../components/budget/BudgetCard';
+import BudgetForm from '../components/budget/BudgetForm';
 import { theme } from '../styles/theme';
-import BudgetForm from '../components/BudgetForm';
 
-interface BudgetItem {
+interface Budget {
   id: number;
-  categoria_id?: number;
   categoria_nome: string;
   categoria_icona?: string;
   importo: number;
+  spesa_corrente: number;
+  rimanente: number;
+  percentuale_utilizzo: number;
+  stato: 'ok' | 'attenzione' | 'superato';
   periodo: string;
-  importo_budget: number;
-  importo_speso: number;
-  rimanente?: number;
-  mese?: number;
-  anno?: number;
-  percentuale_uso: number;
 }
 
-function Budget() {
-  const [budgets, setBudgets] = useState<BudgetItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editingBudget, setEditingBudget] = useState<BudgetItem | null>(null);
+type View = 'list' | 'create' | 'edit';
+type FilterStato = 'all' | 'ok' | 'attenzione' | 'superato';
 
-  const fetchBudgets = async () => {
+function Budget() {
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [riepilogo, setRiepilogo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  
+  // Filters
+  const [filterStato, setFilterStato] = useState<FilterStato>('all');
+  const [filterPeriodo, setFilterPeriodo] = useState<string>('all');
+  
+  // View state
+  const [view, setView] = useState<View>('list');
+  const [selectedBudgetId, setSelectedBudgetId] = useState<number | null>(null);
+
+  const fetchData = async () => {
     setLoading(true);
+    setError('');
+    
     try {
-      // Use analytics/dashboard endpoint which has correct importo_speso calculation
-      const response = await fetch('/api/analytics/dashboard');
-      if (response.ok) {
-        const dashboardData = await response.json();
-        
-        // Extract budget data from dashboard
-        // Dashboard returns spese_per_categoria which we'll use for budget display
-        if (dashboardData.spese_per_categoria) {
-          // Transform category spending into budget format
-          const budgetData = dashboardData.spese_per_categoria.map((cat: any, index: number) => ({
-            id: index + 1,
-            categoria_nome: cat.nome,
-            categoria_icona: cat.icona,
-            importo_budget: cat.budget_mensile || 1000, // Default budget if not set
-            importo_speso: cat.totale || 0,
-            importo: cat.budget_mensile || 1000,
-            periodo: 'mensile',
-            percentuale_uso: cat.budget_mensile > 0 ? ((cat.totale || 0) / cat.budget_mensile) * 100 : 0
-          }));
-          setBudgets(budgetData);
-        } else {
-          // Fallback to old endpoint if dashboard doesn't have category data
-          const budgetResponse = await fetch('/api/budget');
-          if (budgetResponse.ok) {
-            const data = await budgetResponse.json();
-            setBudgets(data.budget || data || []);
-          } else {
-            setBudgets([]);
-          }
-        }
-      } else {
-        // Last resort: try direct budget endpoint
-        const budgetResponse = await fetch('/api/budget');
-        if (budgetResponse.ok) {
-          const data = await budgetResponse.json();
-          setBudgets(data.budget || data || []);
-        } else {
-          setBudgets([]);
-        }
+      // Fetch budgets
+      const budgetRes = await fetch('/api/budget');
+      if (!budgetRes.ok) throw new Error('Errore caricamento budget');
+      const budgetData = await budgetRes.json();
+      setBudgets(budgetData.budget || []);
+      
+      // Fetch riepilogo
+      const riepilogoRes = await fetch('/api/budget/riepilogo/mensile');
+      if (riepilogoRes.ok) {
+        const riepilogoData = await riepilogoRes.json();
+        setRiepilogo(riepilogoData);
       }
-    } catch (error) {
-      console.error('Errore:', error);
-      setBudgets([]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBudgets();
-  }, []);
+    if (view === 'list') {
+      fetchData();
+    }
+  }, [view]);
 
-  const handleCreate = () => {
-    setEditingBudget(null);
-    setShowForm(true);
+  const handleCreateNew = () => {
+    setSelectedBudgetId(null);
+    setView('create');
   };
 
-  const handleEdit = (budget: BudgetItem) => {
-    setEditingBudget(budget);
-    setShowForm(true);
-  };
-
-  const handleFormClose = () => {
-    setShowForm(false);
-    setEditingBudget(null);
+  const handleEdit = (budgetId: number) => {
+    setSelectedBudgetId(budgetId);
+    setView('edit');
   };
 
   const handleFormSuccess = () => {
-    handleFormClose();
-    fetchBudgets();
+    setView('list');
+    setSelectedBudgetId(null);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!confirm('Eliminare questo budget?')) return;
-    try {
-      const response = await fetch(`/api/budget/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchBudgets();
-    } catch (error) {
-      alert('Errore durante l\'eliminazione');
-    }
+  const handleFormCancel = () => {
+    setView('list');
+    setSelectedBudgetId(null);
   };
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0);
+    return new Intl.NumberFormat('it-IT', { 
+      style: 'currency', 
+      currency: 'EUR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
   };
 
-  const totalBudget = budgets.reduce((sum, b) => sum + (b.importo_budget || b.importo || 0), 0);
-  const totalSpeso = budgets.reduce((sum, b) => sum + (b.importo_speso || 0), 0);
-  const percentualeGlobale = totalBudget > 0 ? (totalSpeso / totalBudget) * 100 : 0;
-
-  if (loading) {
-    return <div style={{ padding: theme.spacing.xl, textAlign: 'center', color: theme.colors.text.secondary }}>Caricamento...</div>;
+  // Show form view
+  if (view === 'create' || view === 'edit') {
+    return (
+      <BudgetForm 
+        budgetId={view === 'edit' ? selectedBudgetId || undefined : undefined}
+        onSuccess={handleFormSuccess}
+        onCancel={handleFormCancel}
+      />
+    );
   }
 
+  // Filter budgets
+  const filteredBudgets = budgets.filter(budget => {
+    if (filterStato !== 'all' && budget.stato !== filterStato) return false;
+    if (filterPeriodo !== 'all' && budget.periodo !== filterPeriodo) return false;
+    return true;
+  });
+
+  // Show list view
   return (
-    <>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: theme.spacing.md }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], color: theme.colors.text.primary }}>Budget Mensile</h2>
-            <p style={{ margin: `${theme.spacing.xs} 0 0 0`, color: theme.colors.text.secondary, fontSize: theme.typography.fontSize.sm }}>
-              {budgets.length} {budgets.length === 1 ? 'categoria' : 'categorie'} monitorate
-            </p>
-          </div>
-          <Button variant="primary" size="sm" leftIcon={<Plus size={16} />} onClick={handleCreate}>
-            Aggiungi Budget
-          </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md }}>
+        <div>
+          <h1 style={{ 
+            margin: 0, 
+            fontSize: theme.typography.fontSize['2xl'], 
+            fontWeight: theme.typography.fontWeight.bold, 
+            color: theme.colors.text.primary 
+          }}>
+            💰 Budget
+          </h1>
+          <p style={{ 
+            margin: `${theme.spacing.xs} 0 0 0`, 
+            fontSize: theme.typography.fontSize.sm, 
+            color: theme.colors.text.secondary 
+          }}>
+            Monitora le tue spese per categoria
+          </p>
         </div>
-
-        {/* Global Summary */}
-        {budgets.length > 0 && (
-          <Card padding="lg">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-              <div>
-                <p style={{ margin: 0, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>Budget Totale</p>
-                <h3 style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
-                  {formatCurrency(totalSpeso)} / {formatCurrency(totalBudget)}
-                </h3>
-              </div>
-              <TrendingUp size={32} color={percentualeGlobale < 80 ? theme.colors.success : theme.colors.warning} />
-            </div>
-            <ProgressBar value={totalSpeso} max={totalBudget} showLabel variant="default" />
-          </Card>
-        )}
-
-        {/* Budget Items */}
-        {budgets.length === 0 ? (
-          <Card padding="xl">
-            <div style={{ textAlign: 'center', padding: theme.spacing['2xl'] }}>
-              <div style={{ fontSize: '64px', marginBottom: theme.spacing.md }}>🎯</div>
-              <h3 style={{ color: theme.colors.text.primary, marginBottom: theme.spacing.sm }}>Nessun budget impostato</h3>
-              <p style={{ color: theme.colors.text.secondary, marginBottom: theme.spacing.lg }}>Inizia a pianificare le tue spese mensili</p>
-              <Button variant="primary" leftIcon={<Plus size={16} />} onClick={handleCreate}>
-                Crea Budget
-              </Button>
-            </div>
-          </Card>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: theme.spacing.md }}>
-            {budgets.map((budget) => {
-              const importoB = budget.importo_budget || budget.importo || 0;
-              const importoS = budget.importo_speso || 0;
-              const percentuale = importoB > 0 ? (importoS / importoB) * 100 : 0;
-              
-              return (
-                <Card key={budget.id} hoverable padding="lg">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.md, marginBottom: theme.spacing.md }}>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: theme.borderRadius.full,
-                      backgroundColor: `${theme.colors.primary.DEFAULT}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: theme.typography.fontSize['2xl']
-                    }}>
-                      {budget.categoria_icona || '💸'}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: 0, fontSize: theme.typography.fontSize.base, fontWeight: theme.typography.fontWeight.semibold, color: theme.colors.text.primary }}>
-                        {budget.categoria_nome}
-                      </h4>
-                      <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-                        {formatCurrency(importoS)} / {formatCurrency(importoB)}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: theme.spacing.xs }}>
-                      {percentuale >= 90 && <AlertCircle size={20} color={theme.colors.danger} />}
-                      <Button variant="ghost" size="sm" leftIcon={<Edit2 size={14} />} onClick={() => handleEdit(budget)} />
-                      <Button variant="ghost" size="sm" leftIcon={<Trash2 size={14} />} onClick={() => handleDelete(budget.id)} />
-                    </div>
-                  </div>
-                  <ProgressBar value={importoS} max={importoB || 1} variant="default" />
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        <Button 
+          variant="primary" 
+          onClick={handleCreateNew}
+          style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+        >
+          <Plus size={18} />
+          Nuovo Budget
+        </Button>
       </div>
 
-      {/* Form Modal */}
-      {showForm && (
-        <BudgetForm
-          budget={editingBudget}
-          onClose={handleFormClose}
-          onSuccess={handleFormSuccess}
-        />
+      {/* Riepilogo Dashboard */}
+      {riepilogo && (
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          gap: theme.spacing.md
+        }}>
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Budget Totale
+            </div>
+            <div style={{ fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+              {formatCurrency(riepilogo.totale_budget)}
+            </div>
+          </Card>
+          
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Speso
+            </div>
+            <div style={{ fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
+              {formatCurrency(riepilogo.totale_speso)}
+            </div>
+          </Card>
+          
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Rimanente
+            </div>
+            <div style={{ 
+              fontSize: theme.typography.fontSize['2xl'], 
+              fontWeight: theme.typography.fontWeight.bold, 
+              color: riepilogo.rimanente >= 0 ? theme.colors.success : theme.colors.danger
+            }}>
+              {formatCurrency(riepilogo.rimanente)}
+            </div>
+          </Card>
+          
+          <Card padding="md">
+            <div style={{ fontSize: theme.typography.fontSize.xs, color: theme.colors.text.secondary, marginBottom: theme.spacing.xs }}>
+              Utilizzo
+            </div>
+            <div style={{ 
+              fontSize: theme.typography.fontSize['2xl'], 
+              fontWeight: theme.typography.fontWeight.bold,
+              color: riepilogo.percentuale_utilizzo >= 100 ? theme.colors.danger : 
+                     riepilogo.percentuale_utilizzo >= 80 ? theme.colors.warning : theme.colors.success
+            }}>
+              {riepilogo.percentuale_utilizzo.toFixed(1)}%
+            </div>
+          </Card>
+        </div>
       )}
-    </>
+
+      {/* Warnings Alert */}
+      {riepilogo && (riepilogo.budget_superati > 0 || riepilogo.budget_attenzione > 0) && (
+        <Card padding="md" style={{ backgroundColor: `${theme.colors.warning}10`, border: `1px solid ${theme.colors.warning}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.sm }}>
+            <AlertTriangle size={20} color={theme.colors.warning} />
+            <div>
+              <strong>Attenzione:</strong> {riepilogo.budget_superati > 0 && `${riepilogo.budget_superati} budget superati`}
+              {riepilogo.budget_superati > 0 && riepilogo.budget_attenzione > 0 && ', '}
+              {riepilogo.budget_attenzione > 0 && `${riepilogo.budget_attenzione} budget vicini al limite`}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Filters */}
+      <Card padding="md">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.md }}>
+          <div>
+            <div style={{ fontSize: theme.typography.fontSize.sm, fontWeight: theme.typography.fontWeight.medium, marginBottom: theme.spacing.xs }}>
+              Filtra per stato
+            </div>
+            <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+              <Button
+                variant={filterStato === 'all' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterStato('all')}
+              >
+                Tutti
+              </Button>
+              <Button
+                variant={filterStato === 'ok' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterStato('ok')}
+                style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+              >
+                <CheckCircle size={16} />
+                Ok
+              </Button>
+              <Button
+                variant={filterStato === 'attenzione' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterStato('attenzione')}
+                style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+              >
+                <TrendingUp size={16} />
+                Attenzione
+              </Button>
+              <Button
+                variant={filterStato === 'superato' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterStato('superato')}
+                style={{ display: 'flex', alignItems: 'center', gap: theme.spacing.xs }}
+              >
+                <AlertTriangle size={16} />
+                Superati
+              </Button>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: theme.typography.fontSize.sm, fontWeight: theme.typography.fontWeight.medium, marginBottom: theme.spacing.xs }}>
+              Filtra per periodo
+            </div>
+            <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+              <Button
+                variant={filterPeriodo === 'all' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterPeriodo('all')}
+              >
+                Tutti
+              </Button>
+              <Button
+                variant={filterPeriodo === 'settimanale' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterPeriodo('settimanale')}
+              >
+                Settimanale
+              </Button>
+              <Button
+                variant={filterPeriodo === 'mensile' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterPeriodo('mensile')}
+              >
+                Mensile
+              </Button>
+              <Button
+                variant={filterPeriodo === 'annuale' ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setFilterPeriodo('annuale')}
+              >
+                Annuale
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Loading state */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: theme.spacing.xl }}>
+          <div style={{ fontSize: '48px', marginBottom: theme.spacing.md }}>⏳</div>
+          <p style={{ color: theme.colors.text.secondary }}>Caricamento budget...</p>
+        </div>
+      )}
+
+      {/* Error state */}
+      {error && (
+        <Card padding="xl">
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: theme.colors.danger, marginBottom: theme.spacing.lg }}>{error}</p>
+            <Button variant="primary" onClick={fetchData}>Riprova</Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Empty state */}
+      {!loading && !error && filteredBudgets.length === 0 && budgets.length === 0 && (
+        <Card padding="xl">
+          <div style={{ 
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: theme.spacing.md
+          }}>
+            <div style={{ fontSize: '64px' }}>💰</div>
+            <h3 style={{ margin: 0, color: theme.colors.text.primary }}>
+              Nessun budget configurato
+            </h3>
+            <p style={{ margin: 0, color: theme.colors.text.secondary }}>
+              Crea il tuo primo budget per monitorare le spese per categoria
+            </p>
+            <Button 
+              variant="primary" 
+              onClick={handleCreateNew}
+              style={{ marginTop: theme.spacing.md }}
+            >
+              <Plus size={18} style={{ marginRight: theme.spacing.xs }} />
+              Crea Primo Budget
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* No results after filter */}
+      {!loading && !error && filteredBudgets.length === 0 && budgets.length > 0 && (
+        <Card padding="xl">
+          <div style={{ textAlign: 'center', color: theme.colors.text.secondary }}>
+            <p>Nessun budget trovato con i filtri selezionati</p>
+          </div>
+        </Card>
+      )}
+
+      {/* Budget grid */}
+      {!loading && !error && filteredBudgets.length > 0 && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gap: theme.spacing.lg
+        }}>
+          {filteredBudgets.map((budget) => (
+            <BudgetCard 
+              key={budget.id}
+              budget={budget}
+              onClick={() => handleEdit(budget.id)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
