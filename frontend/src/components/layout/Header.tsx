@@ -4,9 +4,10 @@ import { theme } from '../../styles/theme';
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  onLogoClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
+export const Header: React.FC<HeaderProps> = ({ title, subtitle, onLogoClick }) => {
   const headerStyles: React.CSSProperties = {
     position: 'sticky',
     top: 0,
@@ -20,28 +21,25 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
     boxShadow: theme.shadows.sm,
   };
 
-  const logoContainerStyles: React.CSSProperties = {
+  const logoButtonStyles: React.CSSProperties = {
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    gap: theme.spacing.sm,
+    transition: `opacity ${theme.transitions.base}`,
   };
 
   const logoImageStyles: React.CSSProperties = {
-    height: '40px',
+    height: '56px',
     width: 'auto',
     objectFit: 'contain',
   };
 
-  const logoTextStyles: React.CSSProperties = {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.primary.DEFAULT,
-    margin: 0,
-  };
-
   const dividerStyles: React.CSSProperties = {
     width: '1px',
-    height: '32px',
+    height: '40px',
     backgroundColor: theme.colors.border.light,
   };
 
@@ -64,14 +62,20 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
     margin: 0,
   };
 
+  const [isLogoHovered, setIsLogoHovered] = React.useState(false);
+
   return (
     <header style={headerStyles}>
-      <div style={logoContainerStyles}>
-        {/* 
-          IMPORTANTE: Sostituisci il percorso dell'immagine con il tuo logo JPEG
-          Metti il file in: frontend/public/logo.jpg
-          Oppure usa: frontend/src/assets/logo.jpg (e importalo con: import logo from './assets/logo.jpg')
-        */}
+      <button
+        style={{
+          ...logoButtonStyles,
+          opacity: isLogoHovered ? 0.8 : 1,
+        }}
+        onClick={onLogoClick}
+        onMouseEnter={() => setIsLogoHovered(true)}
+        onMouseLeave={() => setIsLogoHovered(false)}
+        title="Torna alla Dashboard"
+      >
         <img 
           src="/logo.jpg" 
           alt="Lume Finance Logo" 
@@ -81,12 +85,11 @@ export const Header: React.FC<HeaderProps> = ({ title, subtitle }) => {
             e.currentTarget.style.display = 'none';
             const fallback = document.createElement('span');
             fallback.textContent = '💡';
-            fallback.style.fontSize = '32px';
+            fallback.style.fontSize = '48px';
             e.currentTarget.parentElement?.insertBefore(fallback, e.currentTarget);
           }}
         />
-        <h1 style={logoTextStyles}>Lume Finance</h1>
-      </div>
+      </button>
       
       <div style={dividerStyles} />
       
