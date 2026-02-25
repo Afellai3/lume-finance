@@ -34,11 +34,14 @@ export interface Movimento {
   tipo: string
   categoria_id?: number
   conto_id?: number
+  budget_id?: number
   descrizione: string
   ricorrente: boolean
   categoria_nome?: string
   categoria_icona?: string
   conto_nome?: string
+  budget_categoria_nome?: string
+  budget_categoria_icona?: string
   // Scomposizione costi
   bene_id?: number
   bene_nome?: string

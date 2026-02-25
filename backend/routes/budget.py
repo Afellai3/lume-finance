@@ -49,18 +49,36 @@ async def list_budget(attivi_solo: bool = True):
         for budget in budget_list:
             periodo_query = get_periodo_query(budget['periodo'])
             
+            # PRIORITÀ 1: Movimenti con budget_id esplicito
+            cursor = conn.execute(
+                f"""
+                SELECT COALESCE(SUM(importo), 0)
+                FROM movimenti
+                WHERE budget_id = ?
+                AND tipo = 'uscita'
+                AND {periodo_query}
+                """,
+                (budget['id'],)
+            )
+            spesa_budget_esplicito = cursor.fetchone()[0]
+            
+            # PRIORITÀ 2: Movimenti con categoria ma SENZA budget_id esplicito
             cursor = conn.execute(
                 f"""
                 SELECT COALESCE(SUM(importo), 0)
                 FROM movimenti
                 WHERE categoria_id = ?
+                AND budget_id IS NULL
                 AND tipo = 'uscita'
                 AND {periodo_query}
                 """,
                 (budget['categoria_id'],)
             )
+            spesa_categoria = cursor.fetchone()[0]
             
-            spesa_corrente = cursor.fetchone()[0]
+            # Somma le due tipologie
+            spesa_corrente = spesa_budget_esplicito + spesa_categoria
+            
             budget['spesa_corrente'] = spesa_corrente
             budget['rimanente'] = budget['importo'] - spesa_corrente
             budget['percentuale_utilizzo'] = (
