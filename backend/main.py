@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import routes
-from .routes import conti, beni, movimenti
+from .routes import conti, beni, movimenti, analytics
 from .database import init_database
 
 app = FastAPI(
@@ -24,6 +24,7 @@ app.add_middleware(
 app.include_router(conti.router, prefix="/api")
 app.include_router(beni.router, prefix="/api")
 app.include_router(movimenti.router, prefix="/api")
+app.include_router(analytics.router, prefix="/api")
 
 
 @app.on_event("startup")
@@ -51,23 +52,4 @@ async def health_check():
     return {
         "status": "healthy",
         "database": "connected"
-    }
-
-
-@app.get("/api/info")
-async def api_info():
-    """Informazioni su endpoint disponibili"""
-    return {
-        "endpoints": {
-            "conti": "/api/conti",
-            "beni": "/api/beni",
-            "movimenti": "/api/movimenti"
-        },
-        "features": [
-            "Gestione conti bancari e portafogli",
-            "Tracciamento beni (auto, elettrodomestici)",
-            "Movimenti con scomposizione costi automatica",
-            "Calcolo dettagliato costi veicoli",
-            "Calcolo consumo elettrodomestici"
-        ]
     }
