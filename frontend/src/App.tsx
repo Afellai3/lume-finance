@@ -6,6 +6,7 @@ import Conti from './pages/Conti'
 import Beni from './pages/Beni'
 import Budget from './pages/Budget'
 import Obiettivi from './pages/Obiettivi'
+import Ricorrenze from './pages/Ricorrenze'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -22,6 +23,10 @@ function App() {
     conti: { 
       title: 'Conti Bancari', 
       subtitle: 'I tuoi conti e saldi' 
+    },
+    ricorrenze: {
+      title: 'Movimenti Ricorrenti',
+      subtitle: 'Automatizza entrate e uscite ricorrenti'
     },
     beni: { 
       title: 'Beni', 
@@ -45,6 +50,8 @@ function App() {
         return <Movimenti />
       case 'conti':
         return <Conti />
+      case 'ricorrenze':
+        return <Ricorrenze />
       case 'beni':
         return <Beni />
       case 'budget':
