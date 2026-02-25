@@ -44,35 +44,90 @@ function Dashboard() {
       
       // Fetch obiettivi and movements to calculate actual amounts
       try {
-        const [obiettiviRes, movimentiRes] = await Promise.all([
-          fetch('/api/obiettivi'),
-          fetch('/api/movimenti?per_page=1000')
-        ]);
+        console.log('📊 Dashboard: Fetching obiettivi and movements...');
         
-        if (obiettiviRes.ok && movimentiRes.ok) {
-          const obiettivi = await obiettiviRes.json();
-          const movimentiData = await movimentiRes.json();
-          const movimenti = movimentiData.items || movimentiData || [];
-          
-          // Calculate importo_accumulato for each obiettivo
-          const obiettiviWithAmounts = obiettivi.map((obiettivo: any) => {
-            const importoCalcolato = movimenti
-              .filter((m: any) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata')
-              .reduce((sum: number, m: any) => sum + (m.importo || 0), 0);
+        const obiettiviRes = await fetch('/api/obiettivi');
+        if (!obiettiviRes.ok) {
+          console.error('❌ Dashboard: Failed to fetch obiettivi');
+          setData(dashboardData);
+          setLoading(false);
+          return;
+        }
+        
+        const obiettivi = await obiettiviRes.json();
+        console.log('✅ Dashboard: Obiettivi fetched:', obiettivi);
+        
+        // Fetch movements with multiple fallback strategies
+        let movimenti: any[] = [];
+        
+        try {
+          const movimentiRes = await fetch('/api/movimenti');
+          if (movimentiRes.ok) {
+            const movimentiData = await movimentiRes.json();
             
-            return {
-              ...obiettivo,
-              importo_accumulato: importoCalcolato,
-              importo_corrente: importoCalcolato,
-              importo_attuale: importoCalcolato,
-              target: obiettivo.importo_target
-            };
+            if (Array.isArray(movimentiData)) {
+              movimenti = movimentiData;
+            } else if (movimentiData.items && Array.isArray(movimentiData.items)) {
+              movimenti = movimentiData.items;
+            } else if (movimentiData.movimenti && Array.isArray(movimentiData.movimenti)) {
+              movimenti = movimentiData.movimenti;
+            }
+            
+            console.log(`✅ Dashboard: Fetched ${movimenti.length} movements`);
+          }
+        } catch (err) {
+          console.error('❌ Dashboard: Error fetching movements:', err);
+        }
+        
+        // If no movements, try with limit
+        if (movimenti.length === 0) {
+          try {
+            const movimentiRes2 = await fetch('/api/movimenti?limit=10000');
+            if (movimentiRes2.ok) {
+              const movimentiData2 = await movimentiRes2.json();
+              if (Array.isArray(movimentiData2)) {
+                movimenti = movimentiData2;
+              } else if (movimentiData2.items) {
+                movimenti = movimentiData2.items;
+              }
+              console.log(`✅ Dashboard: Fetched ${movimenti.length} movements with limit`);
+            }
+          } catch (err) {
+            console.error('❌ Dashboard: Error fetching movements with limit:', err);
+          }
+        }
+        
+        // Calculate importo_accumulato for each obiettivo
+        const obiettiviWithAmounts = obiettivi.map((obiettivo: any) => {
+          const relatedMovements = movimenti.filter(
+            (m: any) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata'
+          );
+          
+          const importoCalcolato = relatedMovements.reduce(
+            (sum: number, m: any) => sum + (m.importo || 0),
+            0
+          );
+          
+          console.log(`📈 Dashboard Obiettivo "${obiettivo.nome}":`, {
+            id: obiettivo.id,
+            relatedMovements: relatedMovements.length,
+            importoCalcolato
           });
           
-          dashboardData.obiettivi_risparmio = obiettiviWithAmounts;
-        }
+          return {
+            ...obiettivo,
+            importo_accumulato: importoCalcolato,
+            importo_corrente: importoCalcolato,
+            importo_attuale: importoCalcolato,
+            target: obiettivo.importo_target
+          };
+        });
+        
+        dashboardData.obiettivi_risparmio = obiettiviWithAmounts;
+        console.log('✅ Dashboard: Obiettivi with amounts:', obiettiviWithAmounts);
+        
       } catch (err) {
-        console.error('Error fetching obiettivi:', err);
+        console.error('❌ Dashboard: Error processing obiettivi:', err);
         // Continue with dashboard data even if obiettivi fail
       }
       
