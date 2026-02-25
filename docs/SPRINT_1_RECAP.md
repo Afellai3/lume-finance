@@ -1,269 +1,336 @@
-# 🏁 Sprint 1: Gestione Movimenti Avanzata - COMPLETATO
+# 📊 Sprint 1 Lite - Movimenti Avanzati
 
-> **Data completamento**: 25 Febbraio 2026  
-> **Obiettivo**: Rendere la gestione movimenti completamente utilizzabile con filtri, paginazione, dettagli e export.
-
----
-
-## ✅ Features Implementate
-
-### 1️⃣ **Paginazione Backend**
-
-**File modificati**: `backend/routes/movimenti.py`
-
-**Endpoint aggiornato**:
-```http
-GET /api/movimenti?page=1&per_page=50&order_by=data&order_dir=desc
-```
-
-**Response structure**:
-```json
-{
-  "items": [...],
-  "total": 250,
-  "page": 1,
-  "per_page": 50,
-  "total_pages": 5
-}
-```
-
-**Parametri supportati**:
-- `page` (default: 1) - Numero pagina
-- `per_page` (default: 50, max: 100) - Elementi per pagina
-- `order_by` - Campo ordinamento: `data`, `importo`, `categoria`
-- `order_dir` - Direzione: `asc` o `desc`
-
-**Vantaggi**:
-- ⚡ Performance migliorate con grandi dataset
-- 📏 Caricamento dati progressivo
-- 🔄 Riduzione carico server
+> **Completato**: 25 Febbraio 2026  
+> **Branch**: `main`  
+> **Commits**: [2910a64](https://github.com/Afellai3/lume-finance/commit/2910a64), [2256c19](https://github.com/Afellai3/lume-finance/commit/2256c19)
 
 ---
 
-### 2️⃣ **Export CSV**
+## 🎯 Obiettivi Sprint
 
-**Endpoint nuovo**:
-```http
-GET /api/movimenti/export
+Migliorare la gestione movimenti con funzionalità avanzate:
+1. ✅ **Paginazione UI** - Navigazione tra pagine di movimenti
+2. ✅ **Export CSV funzionante** - Download file CSV con tutti i movimenti
+3. ✅ **Modale Dettaglio** - Visualizzazione completa movimento con scomposizione costi
+
+---
+
+## ✨ Feature Implementate
+
+### 1. Paginazione Frontend
+
+**Cosa fa**:
+- Mostra 20 movimenti per pagina (configurabile)
+- Bottoni navigazione "Precedente" / "Successiva"
+- Info "Pagina X di Y" + totale movimenti
+- Reset automatico a pagina 1 su cambio filtri
+
+**Componenti utilizzati**:
+```tsx
+<Button 
+  variant="secondary" 
+  size="sm"
+  leftIcon={<ChevronLeft />}
+  disabled={page === 1}
+>
+  Precedente
+</Button>
 ```
 
-**Campi esportati**:
-- ID, Data, Tipo, Importo (€)
+**Design**:
+- Layout centrato con gap consistente
+- Bottoni disabilitati agli estremi
+- Typography scale theme (`sm`, `xs`)
+- Stati disabled con opacity ridotta
+
+---
+
+### 2. Export CSV Funzionante
+
+**Cosa fa**:
+- Chiama endpoint backend `/api/movimenti/export`
+- Download automatico file con timestamp
+- Nome file: `movimenti_export_2026-02-25.csv`
+
+**Implementazione**:
+```typescript
+const handleExport = async () => {
+  const response = await fetch('/api/movimenti/export');
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `movimenti_export_${date}.csv`;
+  a.click();
+};
+```
+
+**Campi CSV esportati**:
+- ID, Data, Tipo, Importo
 - Categoria, Conto, Descrizione
-- Ricorrente, Bene collegato
+- Ricorrente, Bene, Obiettivo
 - Km Percorsi, Ore Utilizzo
 
-**Formato file**: `movimenti_YYYYMMDD_HHMMSS.csv`
+---
 
-**Caratteristiche**:
-- 💾 Download immediato via browser
-- 🌍 Encoding UTF-8 (compatibile Excel Italia)
-- 📅 Nome file con timestamp automatico
-- 📄 Tutti i movimenti esportati (no limite paginazione)
+### 3. Modale Dettaglio Movimento
+
+**Cosa mostra**:
+- 📊 **Info base**: Data, importo, tipo, categoria
+- 🏦 **Conti**: Conto associato
+- 🎯 **Budget & Obiettivi**: Se collegati
+- 📦 **Beni**: Nome bene + km/ore utilizzo
+- 🔍 **Scomposizione Costi**: Breakdown dettagliato (se disponibile)
+
+**Componente**: `MovimentoDetailModal.tsx`
+
+**Struttura**:
+```tsx
+<Modal overlay={0.75} blur={4px}>
+  <Header>
+    <Icon + Title + Amount />
+    <CloseButton />
+  </Header>
+  
+  <Body>
+    <InfoGrid>Dati base</InfoGrid>
+    <BudgetGoalInfo />
+    <AssetInfo />
+    <CostBreakdown />  {/* Se bene_id presente */}
+  </Body>
+</Modal>
+```
+
+**Scomposizione Costi**:
+- Fetcha `/api/movimenti/{id}/scomposizione`
+- Mostra componenti costo (carburante, manutenzione, ammortamento)
+- Percentuale su totale
+- Totale effettivo evidenziato
+
+**Interazioni**:
+- ✅ Click su card movimento → apre modale
+- ✅ Click su overlay → chiude modale
+- ✅ Tasto ESC → chiude modale
+- ✅ Bottoni Edit/Delete → non aprono modale (stopPropagation)
 
 ---
 
-### 3️⃣ **Modale Dettaglio Movimento**
+## 🎨 Design System Compliance
 
-**Componenti creati**:
-- `frontend/src/components/MovimentoDetailModal.tsx`
-- `frontend/src/components/MovimentoDetailModal.css`
+### Colori
+✅ Primary: `#4A90E2`  
+✅ Success/Danger: `#4CAF50` / `#FF6B6B`  
+✅ Background: `#F8F9FA`  
+✅ Shadows: `theme.shadows.xl`
 
-**Trigger**: Click su qualsiasi card movimento
+### Spacing
+✅ Gap: `theme.spacing.lg` (24px)  
+✅ Padding modale: `theme.spacing.xl` (32px)  
+✅ Card padding: `theme.spacing.md` (16px)
 
-**Sezioni modale**:
-1. **Header Importo** - Gradient colorato (verde entrata, rosso uscita)
-2. **Descrizione** - Testo completo con formattazione
-3. **Informazioni Base** - Data, categoria, conto, budget, ricorrenza
-4. **Bene Collegato** - Dettagli veicolo/elettrodomestico + km/ore
-5. **Scomposizione Costi** - Breakdown componenti con totale effettivo
+### Typography
+✅ Font: Inter (sans-serif)  
+✅ Sizes: `sm`, `base`, `lg`, `2xl`, `3xl`  
+✅ Weights: `medium`, `semibold`, `bold`
 
-**Design highlights**:
-- 🎨 Gradient headers dinamici per tipo
-- 💡 Alert evidenziazione costi nascosti
-- 📱 Responsive mobile-first
-- ⏱️ Animazioni smooth (fadeIn + slideUp)
-
-**Esempio scomposizione veicolo**:
-```
-🔍 Scomposizione Costi Nascosti
-
-Costo Totale Effettivo: 85,50€
-
-• Carburante: 45,20€
-  (300km × 6.5L/100km × 1.85€/L)
-• Manutenzione: 18,00€
-  (300km × 0.06€/km)
-• Ammortamento: 22,30€
-  (deprezzamento veicolo)
-```
+### Componenti
+✅ `Card` - Con hover effect  
+✅ `Button` - 4 variant (primary, secondary, danger, ghost)  
+✅ `Badge` - Con colori categoria  
+✅ `Input` - Con icone lucide-react
 
 ---
 
-### 4️⃣ **Paginazione Frontend**
+## 📁 File Modificati
 
-**File modificati**: `frontend/src/pages/Movimenti.tsx`
+### 1. Nuovo: `frontend/src/components/MovimentoDetailModal.tsx`
+- **Commit**: [2910a64](https://github.com/Afellai3/lume-finance/commit/2910a64)
+- **Righe**: ~450
+- **Dipendenze**: `lucide-react`, UI components, theme
 
-**Controlli UI**:
-```
-← Precedente | Pagina 2 di 5 | Successiva →
-```
-
-**Comportamento**:
-- 🚫 Disabilita "Precedente" su pagina 1
-- 🚫 Disabilita "Successiva" su ultima pagina
-- 🔄 Reset automatico a pagina 1 su cambio filtri
-- 📊 Contatore totale aggiornato dinamicamente
-
----
-
-### 5️⃣ **Miglioramenti UX**
-
-**Modifiche `Movimenti.tsx`**:
-- ✅ Card cliccabili con hover effect (translateX)
-- ✅ Bottone export con stato loading
-- ✅ Contatore "X movimenti totali • Y filtrati"
-- ✅ Integrazione seamless con filtri esistenti
-
-**CSS enhancements** (`Movimenti.css`):
-- Transizioni smooth su hover cards
-- Stili paginazione con shadow + hover scale
-- Responsive breakpoints ottimizzati
-- Disabled states consistenti
-
----
-
-## 📊 Statistiche Modifiche
-
-| Metrica | Valore |
-|---------|--------|
-| **File creati** | 2 (Modal + CSS) |
-| **File modificati** | 2 (Backend + Frontend page) |
-| **Linee codice aggiunte** | ~600 |
-| **Nuovi endpoint** | 1 (export CSV) |
-| **Endpoint migliorati** | 1 (list con pagination) |
-| **Componenti UI nuovi** | 1 (MovimentoDetailModal) |
-
----
-
-## 🚀 Come Usare le Nuove Features
-
-### **Navigare tra Pagine**
-1. Vai su **Movimenti** 💸
-2. Usa i bottoni `← Precedente` / `Successiva →` in fondo alla lista
-3. Il contatore mostra la pagina corrente
-
-### **Esportare Movimenti**
-1. Click su `💾 Esporta CSV` nella toolbar
-2. Il browser scarica automaticamente il file
-3. Apri con Excel/LibreOffice Calc
-
-### **Vedere Dettagli Movimento**
-1. Click su **qualsiasi card** movimento
-2. Si apre modale con info complete
-3. Se ha bene collegato, vedi anche scomposizione costi
-4. Click `Chiudi` o fuori dalla modale per uscire
-
-### **Filtrare + Paginare**
-1. Attiva filtri con `🔍 Filtri`
-2. Imposta criteri (data, categoria, tipo, etc.)
-3. La paginazione si resetta automaticamente
-4. Naviga tra pagine dei risultati filtrati
-
----
-
-## 🔧 Dettagli Tecnici
-
-### **Backend Logic**
-
-**Calcolo offset paginazione**:
-```python
-offset = (page - 1) * per_page
-# page=1, per_page=50 → offset=0 (primi 50)
-# page=2, per_page=50 → offset=50 (51-100)
-```
-
-**Query dinamica ordinamento**:
-```python
-order_clause = "m.data DESC"  # Default
-if order_by == "data":
-    order_clause = f"m.data {order_dir.upper()}"
-elif order_by == "importo":
-    order_clause = f"m.importo {order_dir.upper()}"
-```
-
-**CSV generation**:
-- In-memory con `io.StringIO()`
-- Streaming response per file grandi
-- UTF-8 encoding per caratteri italiani
-
-### **Frontend State Management**
-
-**Paginazione state**:
-```typescript
-const [currentPage, setCurrentPage] = useState(1)
-const [totalPages, setTotalPages] = useState(1)
-const [totalItems, setTotalItems] = useState(0)
-```
-
-**Auto-reset su filtri**:
-```typescript
-useEffect(() => {
-  if (currentPage !== 1) {
-    setCurrentPage(1)  // Torna a pagina 1 se filtri cambiano
-  }
-}, [filters.search, filters.tipo, ...])
-```
-
-**Fetch con parametri**:
-```typescript
-const [orderBy, orderDir] = filters.ordine.split('_')
-fetch(`/api/movimenti?page=${currentPage}&per_page=${perPage}&order_by=${orderBy}&order_dir=${orderDir}`)
+**Exports**:
+```tsx
+export default function MovimentoDetailModal({
+  movimento: Movimento | null,
+  onClose: () => void
+})
 ```
 
 ---
 
-## ✅ Checklist Completamento Sprint 1
+### 2. Update: `frontend/src/pages/Movimenti.tsx`
+- **Commit**: [2256c19](https://github.com/Afellai3/lume-finance/commit/2256c19)
+- **SHA precedente**: `904b71e8`
+- **SHA nuovo**: `052b25ed`
 
-- [x] Paginazione backend con query params
-- [x] Response strutturata con metadati paginazione
-- [x] Endpoint export CSV
-- [x] Componente MovimentoDetailModal
-- [x] CSS modale con animazioni
-- [x] Integrazione modale in pagina Movimenti
-- [x] Controlli paginazione frontend
-- [x] Bottone export CSV con loading state
-- [x] Hover effects su card cliccabili
-- [x] Reset pagina su cambio filtri
-- [x] Responsive design mobile
-- [x] Documentazione sprint
+**Modifiche**:
+```diff
++ import MovimentoDetailModal from '../components/MovimentoDetailModal';
++ const [pagination, setPagination] = useState<PaginationInfo>(...);
++ const [selectedMovimento, setSelectedMovimento] = useState<Movimento | null>(null);
 
----
++ const handleExport = async () => { /* Download CSV */ };
++ const handleCardClick = (movimento) => setSelectedMovimento(movimento);
++ const handlePreviousPage = () => { /* Pagination */ };
++ const handleNextPage = () => { /* Pagination */ };
 
-## 🐛 Issues Noti
-
-Nessun issue critico. Feature funzionanti al 100%.
-
-**Possibili miglioramenti futuri** (non critici):
-- Paginazione avanzata con jump to page
-- Export filtrato (solo movimenti visibili)
-- Shortcuts tastiera (Esc per chiudere modale)
-- Lazy loading immagini in modale
++ {/* Pagination UI */}
++ {/* Detail Modal */}
+```
 
 ---
 
-## 📝 Prossimi Passi
+## 🧪 Testing Checklist
 
-**Sprint 2: Dashboard Intelligente**
-- Filtro periodo (1m, 3m, 6m, anno, custom)
-- Grafico trend 6 mesi (Chart.js line)
-- Confronto mese vs precedente con delta %
-- Budget warnings in dashboard
+### Paginazione
+- [ ] Mostra 20 movimenti per pagina
+- [ ] Bottone "Precedente" disabilitato a pagina 1
+- [ ] Bottone "Successiva" disabilitato all'ultima pagina
+- [ ] Click navigazione → fetch nuova pagina
+- [ ] Filtri → reset a pagina 1
+- [ ] Info "Pagina X di Y" corretta
+
+### Export CSV
+- [ ] Click "Esporta" → download file CSV
+- [ ] Nome file con timestamp corretto
+- [ ] CSV contiene tutti i movimenti (non solo pagina corrente)
+- [ ] Encoding UTF-8 corretto (caratteri accentati)
+- [ ] Colonne: ID, Data, Tipo, Importo, Categoria, Conto, ecc.
+
+### Modale Dettaglio
+- [ ] Click su card movimento → apre modale
+- [ ] Modale mostra tutte le info movimento
+- [ ] Click bottoni Edit/Delete → non apre modale
+- [ ] Click overlay → chiude modale
+- [ ] Tasto ESC → chiude modale
+- [ ] Se movimento ha `bene_id` → mostra scomposizione
+- [ ] Scomposizione: componenti + percentuale + totale
+- [ ] Loading state durante fetch scomposizione
+- [ ] Se no bene_id → mostra "Scomposizione non disponibile"
+
+### Design System
+- [ ] Colori consistenti con theme
+- [ ] Spacing scale rispettata (8px base)
+- [ ] Typography scale corretta
+- [ ] Hover effects smooth (200ms)
+- [ ] Shadows corretti (md, lg, xl)
+- [ ] Border radius (8px, 12px, full)
+- [ ] Responsive su mobile
+
+---
+
+## 🚀 Come Testare
+
+### Setup
+```bash
+# Pull ultime modifiche
+git pull origin main
+
+# Riavvia frontend
+cd frontend
+npm run dev
+```
+
+### Test 1: Paginazione
+1. Vai su `/movimenti`
+2. Se hai > 20 movimenti, vedi bottoni paginazione
+3. Click "Successiva" → carica pagina 2
+4. Verifica counter "Pagina 2 di N"
+5. Click "Precedente" → torna pagina 1
+
+### Test 2: Export CSV
+1. Click bottone "Esporta"
+2. Verifica download file CSV
+3. Apri CSV con Excel/LibreOffice
+4. Controlla dati corretti
+
+### Test 3: Modale Dettaglio
+1. Click su una card movimento
+2. Modale si apre con animazione
+3. Verifica info complete
+4. Se movimento ha bene (auto/elettrodomestico):
+   - Attendi caricamento scomposizione
+   - Verifica componenti costo
+   - Verifica totale
+5. Click overlay o ESC → modale si chiude
+
+### Test 4: Scomposizione Costi
+**Prerequisito**: Avere movimento collegato a bene
+
+1. Crea movimento con bene (es. rifornimento auto)
+2. Inserisci km_percorsi
+3. Salva movimento
+4. Click su movimento nella lista
+5. Modale mostra sezione "🔍 Scomposizione Costi"
+6. Verifica:
+   - Carburante: X€
+   - Manutenzione: Y€
+   - Ammortamento: Z€
+   - Totale Effettivo: X+Y+Z€
+
+---
+
+## 📊 Metriche
+
+**Componenti creati**: 1 (MovimentoDetailModal)  
+**File modificati**: 2 (Movimenti.tsx + nuovo componente)  
+**Righe codice**: ~600  
+**Commit**: 2  
+**Tempo sviluppo**: ~1 ora  
+
+**Performance**:
+- Paginazione: 20 item/page → riduce rendering
+- Lazy load scomposizione: fetch solo se `bene_id`
+- Modale: unmount on close → memory efficient
+
+---
+
+## 🔜 Prossimi Step
+
+**Sprint 2**: Dashboard Analytics Avanzate
+- Filtro periodo dashboard
+- Grafico trend mensile (Chart.js)
+- Confronto periodo (mese vs precedente)
+- Budget warnings (>80% utilizzo)
 - Top 5 spese del mese
 
-Vedi `CONTEXT.md` per roadmap completa.
+**Sprint 3**: Conti e Trasferimenti
+- Trasferimenti tra conti
+- Cronologia saldo conto
+- Widget movimenti per conto
+- Validazione saldo positivo
 
 ---
 
-**🎉 Sprint 1 completato con successo!**  
-**Commit finale**: [26b0166](https://github.com/Afellai3/lume-finance/commit/26b0166f342aae0c97aa5feac14019d40099b032)
+## 📸 Screenshots
+
+### Paginazione
+```
+[← Precedente]  Pagina 2 di 5  [Successiva →]
+       150 movimenti totali
+```
+
+### Modale Dettaglio
+```
+┌─────────────────────────────────────┐
+│  💸 Rifornimento Auto          [X]  │
+├─────────────────────────────────────┤
+│  🚗 Fiat 500                        │
+│      -85.50€                        │
+│                                     │
+│  📅 24 febbraio 2026                │
+│  🏷️ Trasporti                      │
+│  🏦 Conto Principale                │
+│                                     │
+│  🔍 Scomposizione Costi:            │
+│  ├─ Carburante: 45.20€              │
+│  ├─ Manutenzione: 18.00€            │
+│  └─ Ammortamento: 22.30€            │
+│                                     │
+│     Totale Effettivo: 85.50€        │
+└─────────────────────────────────────┘
+```
+
+---
+
+**✅ Sprint 1 Lite Completato!**
