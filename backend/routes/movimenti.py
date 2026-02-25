@@ -18,6 +18,7 @@ class MovimentoCreate(BaseModel):
     categoria_id: Optional[int] = None
     conto_id: Optional[int] = None
     budget_id: Optional[int] = None
+    obiettivo_id: Optional[int] = None  # NEW: Link to savings goal
     descrizione: str
     ricorrente: bool = False
     # Campi per scomposizione costi
@@ -35,6 +36,7 @@ class MovimentoUpdate(BaseModel):
     categoria_id: Optional[int] = None
     conto_id: Optional[int] = None
     budget_id: Optional[int] = None
+    obiettivo_id: Optional[int] = None  # NEW: Update goal link
     descrizione: Optional[str] = None
     ricorrente: Optional[bool] = None
 
@@ -76,13 +78,16 @@ async def list_movimenti(
                 b.tipo as bene_tipo,
                 bg.id as budget_id,
                 cat_bg.nome as budget_categoria_nome,
-                cat_bg.icona as budget_categoria_icona
+                cat_bg.icona as budget_categoria_icona,
+                ob.nome as obiettivo_nome,
+                ob.importo_target as obiettivo_target
             FROM movimenti m
             LEFT JOIN categorie c ON m.categoria_id = c.id
             LEFT JOIN conti co ON m.conto_id = co.id
             LEFT JOIN beni b ON m.bene_id = b.id
             LEFT JOIN budget bg ON m.budget_id = bg.id
             LEFT JOIN categorie cat_bg ON bg.categoria_id = cat_bg.id
+            LEFT JOIN obiettivi_risparmio ob ON m.obiettivo_id = ob.id
             ORDER BY {order_clause}
             LIMIT ? OFFSET ?
             """,
@@ -120,12 +125,14 @@ async def export_movimenti_csv():
                 m.descrizione,
                 m.ricorrente,
                 b.nome as bene,
+                ob.nome as obiettivo,
                 m.km_percorsi,
                 m.ore_utilizzo
             FROM movimenti m
             LEFT JOIN categorie c ON m.categoria_id = c.id
             LEFT JOIN conti co ON m.conto_id = co.id
             LEFT JOIN beni b ON m.bene_id = b.id
+            LEFT JOIN obiettivi_risparmio ob ON m.obiettivo_id = ob.id
             ORDER BY m.data DESC
             """
         )
@@ -139,7 +146,7 @@ async def export_movimenti_csv():
         # Header
         writer.writerow([
             'ID', 'Data', 'Tipo', 'Importo (€)', 'Categoria', 
-            'Conto', 'Descrizione', 'Ricorrente', 'Bene', 
+            'Conto', 'Descrizione', 'Ricorrente', 'Bene', 'Obiettivo',
             'Km Percorsi', 'Ore Utilizzo'
         ])
         
@@ -155,8 +162,9 @@ async def export_movimenti_csv():
                 row[6],  # descrizione
                 'Sì' if row[7] else 'No',  # ricorrente
                 row[8] or '',  # bene
-                f"{row[9]:.1f}" if row[9] else '',  # km
-                f"{row[10]:.1f}" if row[10] else ''  # ore
+                row[9] or '',  # obiettivo (NEW)
+                f"{row[10]:.1f}" if row[10] else '',  # km
+                f"{row[11]:.1f}" if row[11] else ''  # ore
             ])
         
         output.seek(0)
@@ -199,13 +207,16 @@ async def get_movimento(movimento_id: int):
                 b.nome as bene_nome,
                 b.tipo as bene_tipo,
                 bg.id as budget_id,
-                cat_bg.nome as budget_categoria_nome
+                cat_bg.nome as budget_categoria_nome,
+                ob.nome as obiettivo_nome,
+                ob.importo_target as obiettivo_target
             FROM movimenti m
             LEFT JOIN categorie c ON m.categoria_id = c.id
             LEFT JOIN conti co ON m.conto_id = co.id
             LEFT JOIN beni b ON m.bene_id = b.id
             LEFT JOIN budget bg ON m.budget_id = bg.id
             LEFT JOIN categorie cat_bg ON bg.categoria_id = cat_bg.id
+            LEFT JOIN obiettivi_risparmio ob ON m.obiettivo_id = ob.id
             WHERE m.id = ?
             """,
             (movimento_id,)
@@ -255,6 +266,13 @@ async def get_scomposizione(movimento_id: int):
 async def create_movimento(movimento: MovimentoCreate):
     """Crea un nuovo movimento con scomposizione automatica se collegato a bene"""
     
+    # NEW: Validate obiettivo_id can only be used with 'entrata'
+    if movimento.obiettivo_id and movimento.tipo != 'entrata':
+        raise HTTPException(
+            status_code=400,
+            detail="obiettivo_id può essere usato solo con movimenti di tipo 'entrata'"
+        )
+    
     with get_db_connection() as conn:
         # Verifica budget se specificato
         if movimento.budget_id:
@@ -271,6 +289,23 @@ async def create_movimento(movimento: MovimentoCreate):
                 raise HTTPException(
                     status_code=400,
                     detail="Il budget selezionato non è attivo"
+                )
+        
+        # NEW: Verify obiettivo exists if specified
+        if movimento.obiettivo_id:
+            cursor = conn.execute(
+                "SELECT id, completato FROM obiettivi_risparmio WHERE id = ?",
+                (movimento.obiettivo_id,)
+            )
+            obiettivo_row = cursor.fetchone()
+            
+            if not obiettivo_row:
+                raise HTTPException(status_code=404, detail="Obiettivo non trovato")
+            
+            if obiettivo_row[1]:  # completato
+                raise HTTPException(
+                    status_code=400,
+                    detail="Non puoi allocare fondi a un obiettivo già completato"
                 )
         
         scomposizione_data = None
@@ -322,14 +357,14 @@ async def create_movimento(movimento: MovimentoCreate):
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
         
-        # Inserisci movimento
+        # Inserisci movimento (NEW: include obiettivo_id)
         import json
         cursor = conn.execute(
             """
             INSERT INTO movimenti 
-            (data, importo, tipo, categoria_id, conto_id, budget_id, descrizione, ricorrente, 
+            (data, importo, tipo, categoria_id, conto_id, budget_id, obiettivo_id, descrizione, ricorrente, 
              bene_id, km_percorsi, ore_utilizzo, scomposizione_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 movimento.data,
@@ -338,6 +373,7 @@ async def create_movimento(movimento: MovimentoCreate):
                 movimento.categoria_id,
                 movimento.conto_id,
                 movimento.budget_id,
+                movimento.obiettivo_id,  # NEW
                 movimento.descrizione,
                 movimento.ricorrente,
                 movimento.bene_id,
@@ -376,6 +412,13 @@ async def create_movimento(movimento: MovimentoCreate):
 async def update_movimento(movimento_id: int, movimento: MovimentoUpdate):
     """Aggiorna un movimento esistente"""
     
+    # NEW: Validate obiettivo_id
+    if movimento.obiettivo_id is not None and movimento.tipo and movimento.tipo != 'entrata':
+        raise HTTPException(
+            status_code=400,
+            detail="obiettivo_id può essere usato solo con movimenti di tipo 'entrata'"
+        )
+    
     with get_db_connection() as conn:
         # Verifica esistenza
         cursor = conn.execute(
@@ -406,6 +449,17 @@ async def update_movimento(movimento_id: int, movimento: MovimentoUpdate):
                     detail="Il budget selezionato non è attivo"
                 )
         
+        # NEW: Verify obiettivo if specified
+        if movimento.obiettivo_id:
+            cursor = conn.execute(
+                "SELECT id, completato FROM obiettivi_risparmio WHERE id = ?",
+                (movimento.obiettivo_id,)
+            )
+            obiettivo_row = cursor.fetchone()
+            
+            if not obiettivo_row:
+                raise HTTPException(status_code=404, detail="Obiettivo non trovato")
+        
         # Costruisci query update dinamica
         updates = []
         params = []
@@ -433,6 +487,11 @@ async def update_movimento(movimento_id: int, movimento: MovimentoUpdate):
         if movimento.budget_id is not None:
             updates.append("budget_id = ?")
             params.append(movimento.budget_id)
+        
+        # NEW: Update obiettivo_id
+        if movimento.obiettivo_id is not None:
+            updates.append("obiettivo_id = ?")
+            params.append(movimento.obiettivo_id)
         
         if movimento.descrizione is not None:
             updates.append("descrizione = ?")

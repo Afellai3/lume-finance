@@ -46,6 +46,7 @@ class Movimento(BaseModel):
     categoria_id: Optional[int] = None
     conto_id: int
     conto_destinazione_id: Optional[int] = None  # Per trasferimenti
+    obiettivo_id: Optional[int] = Field(None, description="ID obiettivo risparmio (solo per entrate)")  # NEW
     descrizione: str
     note: Optional[str] = None
     ricorrente: bool = False
