@@ -31,21 +31,42 @@ function Budget() {
   const fetchBudgets = async () => {
     setLoading(true);
     try {
-      const now = new Date();
-      const mese = now.getMonth() + 1;
-      const anno = now.getFullYear();
-      
-      // Try monthly budget endpoint first
-      const monthResponse = await fetch(`/api/budget/corrente?mese=${mese}&anno=${anno}`);
-      if (monthResponse.ok) {
-        const data = await monthResponse.json();
-        setBudgets(data);
+      // Use analytics/dashboard endpoint which has correct importo_speso calculation
+      const response = await fetch('/api/analytics/dashboard');
+      if (response.ok) {
+        const dashboardData = await response.json();
+        
+        // Extract budget data from dashboard
+        // Dashboard returns spese_per_categoria which we'll use for budget display
+        if (dashboardData.spese_per_categoria) {
+          // Transform category spending into budget format
+          const budgetData = dashboardData.spese_per_categoria.map((cat: any, index: number) => ({
+            id: index + 1,
+            categoria_nome: cat.nome,
+            categoria_icona: cat.icona,
+            importo_budget: cat.budget_mensile || 1000, // Default budget if not set
+            importo_speso: cat.totale || 0,
+            importo: cat.budget_mensile || 1000,
+            periodo: 'mensile',
+            percentuale_uso: cat.budget_mensile > 0 ? ((cat.totale || 0) / cat.budget_mensile) * 100 : 0
+          }));
+          setBudgets(budgetData);
+        } else {
+          // Fallback to old endpoint if dashboard doesn't have category data
+          const budgetResponse = await fetch('/api/budget');
+          if (budgetResponse.ok) {
+            const data = await budgetResponse.json();
+            setBudgets(data.budget || data || []);
+          } else {
+            setBudgets([]);
+          }
+        }
       } else {
-        // Fallback to general budget list
-        const response = await fetch('/api/budget');
-        if (response.ok) {
-          const data = await response.json();
-          setBudgets(data.budget || data);
+        // Last resort: try direct budget endpoint
+        const budgetResponse = await fetch('/api/budget');
+        if (budgetResponse.ok) {
+          const data = await budgetResponse.json();
+          setBudgets(data.budget || data || []);
         } else {
           setBudgets([]);
         }
