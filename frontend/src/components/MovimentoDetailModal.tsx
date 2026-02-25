@@ -34,7 +34,7 @@ interface ScomposizioneComponente {
   nome: string;
   valore: number;
   percentuale?: number;
-  dettagli?: string;
+  dettagli?: any; // Can be string or object
 }
 
 interface ScomposizioneData {
@@ -112,6 +112,35 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
       month: 'long', 
       year: 'numeric' 
     });
+  };
+
+  // Format dettagli - can be string or object
+  const formatDettagli = (dettagli: any): string | null => {
+    if (!dettagli) return null;
+    
+    // If it's already a string, return it
+    if (typeof dettagli === 'string') return dettagli;
+    
+    // If it's an object, format it nicely
+    if (typeof dettagli === 'object') {
+      const parts: string[] = [];
+      
+      // Common fields formatting
+      if (dettagli.km_percorsi) parts.push(`${dettagli.km_percorsi} km`);
+      if (dettagli.consumo_medio) parts.push(`${dettagli.consumo_medio} L/100km`);
+      if (dettagli.litri_consumati) parts.push(`${dettagli.litri_consumati} L`);
+      if (dettagli.prezzo_al_litro) parts.push(`${dettagli.prezzo_al_litro}€/L`);
+      if (dettagli.tipo_carburante) parts.push(dettagli.tipo_carburante);
+      if (dettagli.ore_utilizzo) parts.push(`${dettagli.ore_utilizzo} ore`);
+      if (dettagli.anni_utilizzo) parts.push(`${dettagli.anni_utilizzo} anni`);
+      if (dettagli.prezzo_acquisto) parts.push(`Acquisto: ${formatCurrency(dettagli.prezzo_acquisto)}`);
+      if (dettagli.valore_residuo) parts.push(`Residuo: ${formatCurrency(dettagli.valore_residuo)}`);
+      if (dettagli.tasso_annuo) parts.push(`${(dettagli.tasso_annuo * 100).toFixed(1)}%/anno`);
+      
+      return parts.length > 0 ? parts.join(' • ') : null;
+    }
+    
+    return null;
   };
 
   const overlayStyles: React.CSSProperties = {
@@ -401,44 +430,48 @@ export default function MovimentoDetailModal({ movimento, onClose }: MovimentoDe
                   </div>
 
                   {/* Components */}
-                  {scomposizioneData.scomposizione.map((comp, index) => (
-                    <div key={index} style={rowStyles}>
-                      <div>
-                        <div style={{ 
-                          fontSize: theme.typography.fontSize.sm,
-                          color: theme.colors.text.secondary 
-                        }}>
-                          {comp.nome}
-                        </div>
-                        {comp.dettagli && (
+                  {scomposizioneData.scomposizione.map((comp, index) => {
+                    const dettagliText = formatDettagli(comp.dettagli);
+                    
+                    return (
+                      <div key={index} style={rowStyles}>
+                        <div>
                           <div style={{ 
-                            fontSize: theme.typography.fontSize.xs,
-                            color: theme.colors.text.muted,
-                            marginTop: '2px'
+                            fontSize: theme.typography.fontSize.sm,
+                            color: theme.colors.text.secondary 
                           }}>
-                            {comp.dettagli}
+                            {comp.nome}
                           </div>
-                        )}
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{
-                          fontSize: theme.typography.fontSize.base,
-                          fontWeight: theme.typography.fontWeight.semibold,
-                          color: theme.colors.text.primary,
-                        }}>
-                          {formatCurrency(comp.valore)}
+                          {dettagliText && (
+                            <div style={{ 
+                              fontSize: theme.typography.fontSize.xs,
+                              color: theme.colors.text.muted,
+                              marginTop: '2px'
+                            }}>
+                              {dettagliText}
+                            </div>
+                          )}
                         </div>
-                        {comp.percentuale !== undefined && (
+                        <div style={{ textAlign: 'right' }}>
                           <div style={{
-                            fontSize: theme.typography.fontSize.xs,
-                            color: theme.colors.text.muted,
+                            fontSize: theme.typography.fontSize.base,
+                            fontWeight: theme.typography.fontWeight.semibold,
+                            color: theme.colors.text.primary,
                           }}>
-                            {comp.percentuale.toFixed(1)}%
+                            {formatCurrency(comp.valore)}
                           </div>
-                        )}
+                          {comp.percentuale !== undefined && (
+                            <div style={{
+                              fontSize: theme.typography.fontSize.xs,
+                              color: theme.colors.text.muted,
+                            }}>
+                              {comp.percentuale.toFixed(1)}%
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {/* Total */}
                   <div style={{
