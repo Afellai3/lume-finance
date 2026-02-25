@@ -3,6 +3,7 @@ import { Plus, Car, Home, Wrench, Search } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import BeneDetail from './BeneDetail';
+import BeneForm from '../components/beni/BeneForm';
 import { theme } from '../styles/theme';
 
 interface Bene {
@@ -32,6 +33,8 @@ interface Bene {
   attrezzatura_ore_utilizzo?: number;
 }
 
+type View = 'list' | 'detail' | 'create' | 'edit';
+
 function Beni() {
   const [beni, setBeni] = useState<Bene[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +45,7 @@ function Beni() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // View state
-  const [view, setView] = useState<'list' | 'detail'>('list');
+  const [view, setView] = useState<View>('list');
   const [selectedBeneId, setSelectedBeneId] = useState<number | null>(null);
 
   const fetchBeni = async () => {
@@ -77,8 +80,10 @@ function Beni() {
   };
 
   useEffect(() => {
-    fetchBeni();
-  }, [tipoFilter]);
+    if (view === 'list') {
+      fetchBeni();
+    }
+  }, [tipoFilter, view]);
 
   const handleSearch = () => {
     fetchBeni();
@@ -92,11 +97,30 @@ function Beni() {
   const handleBackToList = () => {
     setView('list');
     setSelectedBeneId(null);
-    fetchBeni(); // Refresh list
   };
 
   const handleCreateNew = () => {
-    alert('Form creazione bene - Coming soon!');
+    setSelectedBeneId(null);
+    setView('create');
+  };
+
+  const handleEdit = (beneId: number) => {
+    setSelectedBeneId(beneId);
+    setView('edit');
+  };
+
+  const handleFormSuccess = () => {
+    setView('list');
+    setSelectedBeneId(null);
+    fetchBeni();
+  };
+
+  const handleFormCancel = () => {
+    if (selectedBeneId) {
+      setView('detail');
+    } else {
+      setView('list');
+    }
   };
 
   const getTypeIcon = (tipo: string) => {
@@ -133,9 +157,26 @@ function Beni() {
     }).format(value);
   };
 
+  // Show form view (create or edit)
+  if (view === 'create' || view === 'edit') {
+    return (
+      <BeneForm 
+        beneId={view === 'edit' ? selectedBeneId || undefined : undefined}
+        onSuccess={handleFormSuccess}
+        onCancel={handleFormCancel}
+      />
+    );
+  }
+
   // Show detail view
   if (view === 'detail' && selectedBeneId) {
-    return <BeneDetail beneId={selectedBeneId} onBack={handleBackToList} />;
+    return (
+      <BeneDetail 
+        beneId={selectedBeneId} 
+        onBack={handleBackToList}
+        onEdit={() => handleEdit(selectedBeneId)}
+      />
+    );
   }
 
   // Show list view
