@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react'
 import './MovimentoForm.css'
 import { Categoria, Conto, Bene, Budget } from '../types'
 
+interface Obiettivo {
+  id: number
+  nome: string
+  importo_target: number
+  importo_attuale: number
+  completato: boolean
+  icona?: string
+}
+
 interface MovimentoFormProps {
   movimento?: any
   onClose: () => void
@@ -13,6 +22,7 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
   const [conti, setConti] = useState<Conto[]>([])
   const [beni, setBeni] = useState<Bene[]>([])
   const [budgets, setBudgets] = useState<Budget[]>([])
+  const [obiettivi, setObiettivi] = useState<Obiettivo[]>([])
   
   const [formData, setFormData] = useState({
     data: movimento?.data.split('T')[0] || new Date().toISOString().split('T')[0],
@@ -21,6 +31,7 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
     categoria_id: movimento?.categoria_id?.toString() || '',
     conto_id: movimento?.conto_id?.toString() || '',
     budget_id: movimento?.budget_id?.toString() || '',
+    obiettivo_id: movimento?.obiettivo_id?.toString() || '',
     descrizione: movimento?.descrizione || '',
     ricorrente: movimento?.ricorrente || false,
     // Campi bene
@@ -39,6 +50,7 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
     fetchConti()
     fetchBeni()
     fetchBudgets()
+    fetchObiettivi()
   }, [])
 
   useEffect(() => {
@@ -100,6 +112,46 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
     }
   }
 
+  const fetchObiettivi = async () => {
+    try {
+      // Fetch obiettivi structure
+      const obiettiviResponse = await fetch('/api/obiettivi')
+      if (!obiettiviResponse.ok) return
+      
+      const obiettiviData = await obiettiviResponse.json()
+      
+      // Fetch movements to calculate actual amounts
+      let movimenti: any[] = []
+      try {
+        const movimentiResponse = await fetch('/api/movimenti')
+        if (movimentiResponse.ok) {
+          const movimentiData = await movimentiResponse.json()
+          movimenti = movimentiData.items || movimentiData || []
+        }
+      } catch (err) {
+        console.error('Error fetching movements:', err)
+      }
+      
+      // Calculate importo_attuale for each obiettivo
+      const obiettiviWithAmounts = obiettiviData.map((obiettivo: any) => {
+        const importoCalcolato = movimenti
+          .filter((m: any) => m.obiettivo_id === obiettivo.id && m.tipo === 'entrata')
+          .reduce((sum: number, m: any) => sum + (m.importo || 0), 0)
+        
+        return {
+          ...obiettivo,
+          importo_attuale: importoCalcolato
+        }
+      })
+      
+      // Filter only active (non-completed) goals
+      setObiettivi(obiettiviWithAmounts.filter((o: Obiettivo) => !o.completato))
+      
+    } catch (error) {
+      console.error('Errore caricamento obiettivi:', error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
@@ -112,6 +164,7 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
         categoria_id: formData.categoria_id ? parseInt(formData.categoria_id) : null,
         conto_id: formData.conto_id ? parseInt(formData.conto_id) : null,
         budget_id: formData.budget_id ? parseInt(formData.budget_id) : null,
+        obiettivo_id: formData.obiettivo_id ? parseInt(formData.obiettivo_id) : null,
         descrizione: formData.descrizione,
         ricorrente: formData.ricorrente
       }
@@ -177,6 +230,15 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
     alert(dettagli.join('\n'))
   }
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value || 0)
+  }
+
+  const calculatePercentage = (current: number, target: number): number => {
+    if (target === 0) return 0
+    return Math.min((current / target) * 100, 100)
+  }
+
   const categorieByTipo = categorie.filter(c => c.tipo === formData.tipo)
   const budgetsDisponibili = budgets.filter(b => b.importo > 0)
 
@@ -204,7 +266,7 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
               <label>Tipo *</label>
               <select
                 value={formData.tipo}
-                onChange={(e) => setFormData({ ...formData, tipo: e.target.value, categoria_id: '' })}
+                onChange={(e) => setFormData({ ...formData, tipo: e.target.value, categoria_id: '', obiettivo_id: '' })}
                 required
               >
                 <option value="entrata">Entrata</option>
@@ -276,6 +338,31 @@ function MovimentoForm({ movimento, onClose, onSuccess }: MovimentoFormProps) {
                 </select>
                 <small className="form-hint">
                   💡 Se non selezioni un budget, verrà usato quello della categoria
+                </small>
+              </div>
+            )}
+
+            {formData.tipo === 'entrata' && obiettivi.length > 0 && (
+              <div className="form-group">
+                <label>
+                  💰 Obiettivo di Risparmio <span className="label-hint">(opzionale)</span>
+                </label>
+                <select
+                  value={formData.obiettivo_id}
+                  onChange={(e) => setFormData({ ...formData, obiettivo_id: e.target.value })}
+                >
+                  <option value="">Nessun obiettivo</option>
+                  {obiettivi.map((obiettivo) => {
+                    const percentuale = calculatePercentage(obiettivo.importo_attuale, obiettivo.importo_target)
+                    return (
+                      <option key={obiettivo.id} value={obiettivo.id}>
+                        {obiettivo.icona || '🎯'} {obiettivo.nome} - {percentuale.toFixed(0)}% ({formatCurrency(obiettivo.importo_attuale)} / {formatCurrency(obiettivo.importo_target)})
+                      </option>
+                    )
+                  })}
+                </select>
+                <small className="form-hint">
+                  💡 Alloca questa entrata a un obiettivo di risparmio
                 </small>
               </div>
             )}
