@@ -72,3 +72,14 @@ export interface Budget {
   rimanente: number
   stato?: 'ok' | 'attenzione' | 'superato'
 }
+
+export interface Obiettivo {
+  id?: number
+  nome: string
+  importo_target: number
+  importo_attuale: number
+  data_target: string | null
+  priorita: number
+  completato: boolean
+  data_creazione?: string
+}
