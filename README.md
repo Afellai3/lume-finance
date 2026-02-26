@@ -1,6 +1,6 @@
 # 💰 Lume Finance
 
-> Sistema di gestione finanze personali con analisi avanzata dei costi nascosti
+> Sistema moderno di gestione finanze personali con analisi avanzata dei costi nascosti, tema dark/light e interfaccia mobile-first
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev/)
@@ -8,6 +8,14 @@
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)](https://www.sqlite.org/)
 
 ## 🎯 Caratteristiche Principali
+
+### 🎨 UI/UX Moderna
+- **🌓 Tema Dark/Light**: Switch seamless con persistenza localStorage
+- **📱 Mobile-First**: Interfaccia ottimizzata per smartphone
+- **🧭 Bottom Navigation**: Navigazione rapida con icone intuitive
+- **🖼️ Header con Logo Cliccabile**: Click sul logo → torna alla Dashboard
+- **⚡ Animazioni Fluide**: Transizioni smooth e hover effects
+- **🎨 Design System**: Tema coerente con gradient accent colors
 
 ### 📊 Dashboard
 - **KPI in tempo reale**: Saldo totale, entrate/uscite mensili
@@ -110,10 +118,16 @@ lume-finance/
 │   └── main.py             # FastAPI app
 ├── frontend/               # React + TypeScript
 │   ├── src/
-│   │   ├── components/     # Form e UI components
+│   │   ├── components/
+│   │   │   ├── layout/     # Header, BottomNav, Layout
+│   │   │   ├── ui/         # ThemeToggle, ConfirmDialog
+│   │   │   └── forms/      # MovimentoForm, ContoForm, ecc.
 │   │   ├── pages/          # Dashboard, Movimenti, Budget, ecc.
+│   │   ├── hooks/          # useTheme, useApi
+│   │   ├── theme/          # Theme system (dark/light)
 │   │   └── App.tsx         # Router principale
-│   └── package.json
+│   └── public/
+│       └── logo.jpg        # Logo aziendale
 ├── database/
 │   ├── schema.sql          # Schema database
 │   ├── seed_data.sql       # Dati demo
@@ -320,6 +334,20 @@ DELETE /api/beni/{id}                  # Elimina bene
 
 ## 🎨 Frontend Components
 
+### Layout & Navigation
+```typescript
+Layout.tsx              // Container principale con Header e BottomNav
+Header.tsx              // Logo cliccabile + ThemeToggle + UserInfo
+BottomNav.tsx           // 5 tab navigation (Dashboard, Movimenti, Conti, Budget, Obiettivi)
+```
+
+### Theme System
+```typescript
+useTheme.tsx            // Hook per gestione tema dark/light
+ThemeToggle.tsx         // Switch animato Sun/Moon
+theme.ts                // Palette colori + spacing + typography
+```
+
 ### Pages
 - **Dashboard**: `/` - Overview con KPI e grafici
 - **Movimenti**: `/movimenti` - Lista e gestione transazioni
@@ -339,7 +367,7 @@ ObiettivoForm.tsx
 
 // UI Components
 ConfirmDialog.tsx         // Dialog conferma eliminazione
-PromptDialog.tsx          // Dialog input importo (deprecato)
+ThemeToggle.tsx           // Dark/Light mode switch
 ```
 
 ---
@@ -426,6 +454,29 @@ Creando un movimento con `ore_utilizzo: 10`:
 └─ Ammortamento: 0.56€ (10h × 0.056€/h)
 ```
 
+### 4. Sistema di Temi (Dark/Light)
+
+**Persistenza**: Il tema selezionato viene salvato in `localStorage`
+
+**Palette colori**:
+```typescript
+// Light Mode
+background: '#f8f9fa'
+surface: '#ffffff'
+text.primary: '#1a1a1a'
+
+// Dark Mode
+background: '#0f172a'
+surface: '#1e293b'
+text.primary: '#f1f5f9'
+
+// Shared
+primary.DEFAULT: '#3b82f6'
+primary.gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+```
+
+**Transizioni**: Tutti i colori hanno `transition: 0.3s ease`
+
 ---
 
 ## 🐛 Bug Risolti (Feb 2026)
@@ -439,6 +490,9 @@ Creando un movimento con `ore_utilizzo: 10`:
 - ✅ Encoding UTF-8 per Windows (fix UnicodeDecodeError)
 - ✅ Schema già esistente: skip se DB presente
 - ✅ **Obiettivi con valori diversi**: GET `/api/obiettivi` ora calcola da movimenti
+- ✅ **Logo cliccabile**: Click logo → torna alla Dashboard
+- ✅ **Tema dark/light**: Switch persistente con localStorage
+- ✅ **Bottom navigation**: Icone Material Design con hover effects
 
 ---
 
@@ -457,6 +511,7 @@ Creando un movimento con `ore_utilizzo: 10`:
 - [ ] Integrazione API bancarie (PSD2)
 - [ ] Machine Learning per previsioni spesa
 - [ ] Tag personalizzati oltre le categorie
+- [ ] PWA (Progressive Web App) installabile
 
 ---
 
@@ -482,7 +537,7 @@ MIT License - vedi file LICENSE per dettagli.
 
 **Sviluppato da**: Afellai3  
 **Contesto**: Data Analyst con Power BI in azienda trasporto e logistica  
-**Località**: Provincia di Salerno, Campania, IT  
+**Località**: Montoro Superiore, Provincia di Salerno, Campania, IT  
 
 ---
 
@@ -492,6 +547,7 @@ MIT License - vedi file LICENSE per dettagli.
 - React team per l'ecosistema frontend
 - Chart.js per i grafici interattivi
 - SQLite per il database leggero e potente
+- Lucide React per le icone
 
 ---
 
