@@ -1,144 +1,117 @@
-import React from 'react';
-import { Loader2 } from 'lucide-react';
+import React, { ReactNode, CSSProperties } from 'react';
 import { theme } from '../../styles/theme';
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  isLoading?: boolean;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+type ButtonSize = 'sm' | 'md' | 'lg';
+
+interface ButtonProps {
+  children?: ReactNode;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   fullWidth?: boolean;
+  disabled?: boolean;
+  leftIcon?: ReactNode;
+  rightIcon?: ReactNode;
+  onClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
+  style?: CSSProperties;
 }
+
+const VARIANT_STYLES: Record<ButtonVariant, CSSProperties> = {
+  primary: {
+    backgroundColor: theme.colors.primary.DEFAULT,
+    color: 'white',
+    border: 'none',
+  },
+  secondary: {
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text.primary,
+    border: `1px solid ${theme.colors.border.light}`,
+  },
+  ghost: {
+    backgroundColor: 'transparent',
+    color: theme.colors.text.secondary,
+    border: 'none',
+  },
+  danger: {
+    backgroundColor: theme.colors.danger,
+    color: 'white',
+    border: 'none',
+  }
+};
+
+const SIZE_STYLES: Record<ButtonSize, CSSProperties> = {
+  sm: {
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
+    fontSize: theme.typography.fontSize.sm,
+  },
+  md: {
+    padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+    fontSize: theme.typography.fontSize.base,
+  },
+  lg: {
+    padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+    fontSize: theme.typography.fontSize.lg,
+  },
+};
 
 export const Button: React.FC<ButtonProps> = ({
   children,
   variant = 'primary',
   size = 'md',
-  isLoading = false,
+  fullWidth = false,
+  disabled = false,
   leftIcon,
   rightIcon,
-  fullWidth = false,
-  disabled,
-  style,
-  ...props
+  onClick,
+  type = 'button',
+  style
 }) => {
-  const baseStyles: React.CSSProperties = {
+  const baseStyles: CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.sm,
-    fontFamily: theme.typography.fontFamily.sans,
-    fontWeight: theme.typography.fontWeight.medium,
+    gap: theme.spacing.xs,
     borderRadius: theme.borderRadius.md,
-    cursor: disabled || isLoading ? 'not-allowed' : 'pointer',
-    transition: `all ${theme.transitions.base}`,
+    fontWeight: theme.typography.fontWeight.medium,
+    cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.5 : 1,
+    transition: theme.transitions.base,
     width: fullWidth ? '100%' : 'auto',
-  };
-
-  const sizeStyles: Record<string, React.CSSProperties> = {
-    sm: {
-      padding: `${theme.spacing.xs} ${theme.spacing.md}`,
-      fontSize: theme.typography.fontSize.sm,
-    },
-    md: {
-      padding: `${theme.spacing.sm} ${theme.spacing.lg}`,
-      fontSize: theme.typography.fontSize.sm,
-    },
-    lg: {
-      padding: `${theme.spacing.md} ${theme.spacing.xl}`,
-      fontSize: theme.typography.fontSize.base,
-    },
-  };
-
-  const variantStyles: Record<string, React.CSSProperties> = {
-    primary: {
-      backgroundColor: theme.colors.primary.DEFAULT,
-      color: theme.colors.text.white,
-      boxShadow: theme.shadows.primary,
-      borderWidth: '0',
-      borderStyle: 'solid',
-      borderColor: 'transparent',
-    },
-    secondary: {
-      backgroundColor: 'transparent',
-      color: theme.colors.text.primary,
-      borderWidth: '1px',
-      borderStyle: 'solid',
-      borderColor: theme.colors.border.light,
-    },
-    danger: {
-      backgroundColor: theme.colors.danger,
-      color: theme.colors.text.white,
-      boxShadow: '0 2px 4px rgba(255, 107, 107, 0.3)',
-      borderWidth: '0',
-      borderStyle: 'solid',
-      borderColor: 'transparent',
-    },
-    ghost: {
-      backgroundColor: 'transparent',
-      color: theme.colors.text.secondary,
-      borderWidth: '0',
-      borderStyle: 'solid',
-      borderColor: 'transparent',
-    },
-  };
-
-  const hoverStyles: Record<string, React.CSSProperties> = {
-    primary: {
-      backgroundColor: theme.colors.primary.dark,
-      boxShadow: '0 4px 8px rgba(74, 144, 226, 0.4)',
-      transform: 'translateY(-1px)',
-    },
-    secondary: {
-      backgroundColor: theme.colors.background,
-      borderColor: theme.colors.primary.DEFAULT,
-    },
-    danger: {
-      backgroundColor: '#E55555',
-      boxShadow: '0 4px 8px rgba(255, 107, 107, 0.4)',
-    },
-    ghost: {
-      backgroundColor: theme.colors.background,
-    },
-  };
-
-  const [isHovered, setIsHovered] = React.useState(false);
-
-  const combinedStyles: React.CSSProperties = {
-    ...baseStyles,
-    ...sizeStyles[size],
-    ...variantStyles[variant],
-    ...(isHovered && !disabled && !isLoading ? hoverStyles[variant] : {}),
-    ...style,
+    ...VARIANT_STYLES[variant],
+    ...SIZE_STYLES[size],
+    ...style
   };
 
   return (
     <button
-      {...props}
-      disabled={disabled || isLoading}
-      style={combinedStyles}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      type={type}
+      style={baseStyles}
+      onClick={onClick}
+      disabled={disabled}
+      onMouseEnter={(e) => {
+        if (!disabled) {
+          if (variant === 'primary') {
+            e.currentTarget.style.backgroundColor = theme.colors.primary.hover;
+          } else if (variant === 'secondary') {
+            e.currentTarget.style.backgroundColor = theme.colors.border.light;
+          } else if (variant === 'ghost') {
+            e.currentTarget.style.backgroundColor = theme.colors.border.light;
+          } else if (variant === 'danger') {
+            e.currentTarget.style.opacity = '0.9';
+          }
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled) {
+          e.currentTarget.style.backgroundColor = VARIANT_STYLES[variant].backgroundColor as string;
+          e.currentTarget.style.opacity = '1';
+        }
+      }}
     >
-      {isLoading ? (
-        <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-      ) : (
-        leftIcon
-      )}
+      {leftIcon && <span style={{ display: 'flex' }}>{leftIcon}</span>}
       {children}
-      {!isLoading && rightIcon}
+      {rightIcon && <span style={{ display: 'flex' }}>{rightIcon}</span>}
     </button>
   );
 };
-
-// Add keyframe animation for loading spinner
-const styleSheet = document.createElement('style');
-styleSheet.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-document.head.appendChild(styleSheet);

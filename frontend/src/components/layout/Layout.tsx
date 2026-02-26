@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { ReactNode } from 'react';
 import { Header } from './Header';
 import { BottomNav, Page } from './BottomNav';
-import { theme } from '../../styles/theme';
+import { useTheme } from '../../hooks/useTheme';
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   currentPage: Page;
   onPageChange: (page: Page) => void;
   pageTitle: string;
@@ -16,36 +16,27 @@ export const Layout: React.FC<LayoutProps> = ({
   currentPage,
   onPageChange,
   pageTitle,
-  pageSubtitle,
+  pageSubtitle
 }) => {
-  const containerStyles: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    minHeight: '100vh',
-    backgroundColor: theme.colors.background,
-  };
+  const { theme } = useTheme();
 
   const mainStyles: React.CSSProperties = {
-    flex: 1,
-    padding: theme.spacing.lg,
-    paddingBottom: '80px', // Space for bottom navigation
-    maxWidth: '1280px',
-    width: '100%',
-    margin: '0 auto',
+    minHeight: '100vh',
+    backgroundColor: theme.colors.background,
+    paddingBottom: '80px',
+    transition: 'background-color 0.3s ease'
   };
 
-  const handleLogoClick = () => {
-    onPageChange('dashboard');
+  const contentStyles: React.CSSProperties = {
+    maxWidth: theme.layout.maxWidth,
+    margin: '0 auto',
+    padding: theme.spacing.lg
   };
 
   return (
-    <div style={containerStyles}>
-      <Header 
-        title={pageTitle} 
-        subtitle={pageSubtitle} 
-        onLogoClick={handleLogoClick}
-      />
-      <main style={mainStyles}>
+    <div style={mainStyles}>
+      <Header pageTitle={pageTitle} pageSubtitle={pageSubtitle} />
+      <main style={contentStyles}>
         {children}
       </main>
       <BottomNav currentPage={currentPage} onPageChange={onPageChange} />
