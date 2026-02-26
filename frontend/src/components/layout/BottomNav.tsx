@@ -2,17 +2,13 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   ArrowLeftRight, 
-  Wallet, 
-  Car, 
-  Target, 
-  PiggyBank,
-  Building2,
-  Repeat,
-  Tag
+  Landmark,
+  TrendingUp,
+  Settings
 } from 'lucide-react';
 import { theme } from '../../styles/theme';
 
-export type Page = 'dashboard' | 'movimenti' | 'conti' | 'ricorrenze' | 'categorie' | 'beni' | 'budget' | 'obiettivi';
+export type Page = 'dashboard' | 'movimenti' | 'patrimonio' | 'finanza' | 'impostazioni';
 
 interface BottomNavProps {
   currentPage: Page;
@@ -23,12 +19,9 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onPageChange 
   const menuItems = [
     { id: 'dashboard' as Page, icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'movimenti' as Page, icon: ArrowLeftRight, label: 'Movimenti' },
-    { id: 'ricorrenze' as Page, icon: Repeat, label: 'Ricorrenze' },
-    { id: 'conti' as Page, icon: Building2, label: 'Conti' },
-    { id: 'categorie' as Page, icon: Tag, label: 'Categorie' },
-    { id: 'budget' as Page, icon: Wallet, label: 'Budget' },
-    { id: 'obiettivi' as Page, icon: Target, label: 'Obiettivi' },
-    { id: 'beni' as Page, icon: Car, label: 'Beni' },
+    { id: 'patrimonio' as Page, icon: Landmark, label: 'Patrimonio' },
+    { id: 'finanza' as Page, icon: TrendingUp, label: 'Finanza' },
+    { id: 'impostazioni' as Page, icon: Settings, label: 'Altro' },
   ];
 
   const navStyles: React.CSSProperties = {
@@ -57,12 +50,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onPageChange 
     color: isActive ? theme.colors.primary.DEFAULT : theme.colors.text.secondary,
     transition: `all ${theme.transitions.base}`,
     flex: 1,
-    maxWidth: '100px',
+    maxWidth: '120px',
+    minWidth: '60px',
   });
 
   const labelStyles = (isActive: boolean): React.CSSProperties => ({
     fontSize: theme.typography.fontSize.xs,
     fontWeight: isActive ? theme.typography.fontWeight.semibold : theme.typography.fontWeight.normal,
+    whiteSpace: 'nowrap',
   });
 
   return (
@@ -77,7 +72,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ currentPage, onPageChange 
             style={getItemStyles(isActive)}
             onClick={() => onPageChange(item.id)}
           >
-            <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+            <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
             <span style={labelStyles(isActive)}>{item.label}</span>
           </button>
         );
