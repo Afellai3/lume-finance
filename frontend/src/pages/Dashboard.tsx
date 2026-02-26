@@ -280,46 +280,36 @@ function Dashboard() {
 
   return (
     <div style={containerStyles}>
-      {/* Header with Period Filter */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: theme.spacing.md }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: theme.typography.fontSize['2xl'], fontWeight: theme.typography.fontWeight.bold, color: theme.colors.text.primary }}>
-            Dashboard
-          </h1>
-          <p style={{ margin: `${theme.spacing.xs} 0 0 0`, fontSize: theme.typography.fontSize.sm, color: theme.colors.text.secondary }}>
-            Panoramica finanziaria
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
-          <Button
-            variant={periodFilter === '1m' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriodFilter('1m')}
-          >
-            Mese
-          </Button>
-          <Button
-            variant={periodFilter === '3m' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriodFilter('3m')}
-          >
-            3 Mesi
-          </Button>
-          <Button
-            variant={periodFilter === '6m' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriodFilter('6m')}
-          >
-            6 Mesi
-          </Button>
-          <Button
-            variant={periodFilter === '1y' ? 'primary' : 'secondary'}
-            size="sm"
-            onClick={() => setPeriodFilter('1y')}
-          >
-            Anno
-          </Button>
-        </div>
+      {/* Period Filter - Clean header without duplicate title */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: theme.spacing.sm, flexWrap: 'wrap' }}>
+        <Button
+          variant={periodFilter === '1m' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('1m')}
+        >
+          Mese
+        </Button>
+        <Button
+          variant={periodFilter === '3m' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('3m')}
+        >
+          3 Mesi
+        </Button>
+        <Button
+          variant={periodFilter === '6m' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('6m')}
+        >
+          6 Mesi
+        </Button>
+        <Button
+          variant={periodFilter === '1y' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setPeriodFilter('1y')}
+        >
+          Anno
+        </Button>
       </div>
 
       {/* Balance Card - Large Featured Card */}
