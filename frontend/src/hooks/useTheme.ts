@@ -1,21 +1,45 @@
-import { createContext, useContext } from 'react';
+import { useState, useEffect } from 'react';
+import { ThemeMode, getTheme } from '../styles/theme';
 
-export type ThemeMode = 'light' | 'dark';
+const STORAGE_KEY = 'theme_mode';
 
-interface ThemeContextType {
-  mode: ThemeMode;
-  toggle: () => void;
-  theme: any;
-}
+const getSystemTheme = (): ThemeMode => {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+};
 
-export const ThemeContext = createContext<ThemeContextType | null>(null);
+export const useTheme = () => {
+  const [mode, setMode] = useState<ThemeMode>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return (saved as ThemeMode) || getSystemTheme();
+    } catch {
+      return 'light';
+    }
+  });
 
-export function useTheme() {
-  const context = useContext(ThemeContext);
-  
-  if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
-  }
-  
-  return context;
-}
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, mode);
+      document.documentElement.setAttribute('data-theme', mode);
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+    }
+  }, [mode]);
+
+  const toggleTheme = () => {
+    setMode(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
+  const setThemeMode = (newMode: ThemeMode) => {
+    setMode(newMode);
+  };
+
+  return {
+    mode,
+    theme: getTheme(mode),
+    toggleTheme,
+    setThemeMode,
+    isDark: mode === 'dark',
+  };
+};
