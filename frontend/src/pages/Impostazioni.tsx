@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Settings, Moon, Sun, Download, FileText, Info, HelpCircle, Database } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { theme } from '../styles/theme';
 import { useTheme } from '../hooks/useTheme';
+import FAQ from './FAQ';
 
 interface SettingItemProps {
   icon: React.ReactNode;
@@ -85,6 +87,7 @@ const Section: React.FC<SectionProps> = ({ title, children }) => (
 
 function Impostazioni() {
   const { isDark, toggleTheme } = useTheme();
+  const [showFAQ, setShowFAQ] = useState(false);
 
   const handleExportCSV = async () => {
     try {
@@ -111,10 +114,6 @@ function Impostazioni() {
     alert('Funzionalità in arrivo! 📄');
   };
 
-  const handleShowTutorial = () => {
-    alert('Tutorial guidato in arrivo! 🎓');
-  };
-
   const handleResetDatabase = () => {
     if (confirm('⚠️ ATTENZIONE: Questa azione eliminerà TUTTI i dati. Sei sicuro?')) {
       if (confirm('Conferma ancora una volta. Questa azione è IRREVERSIBILE.')) {
@@ -122,6 +121,11 @@ function Impostazioni() {
       }
     }
   };
+
+  // Show FAQ if requested
+  if (showFAQ) {
+    return <FAQ onBack={() => setShowFAQ(false)} />;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing.lg }}>
@@ -228,30 +232,30 @@ function Impostazioni() {
         />
       </Section>
 
-      {/* Informazioni */}
-      <Section title="Informazioni">
+      {/* Aiuto */}
+      <Section title="Aiuto e Supporto">
+        <SettingItem
+          icon={<HelpCircle size={20} />}
+          label="Domande Frequenti (FAQ)"
+          value="Trova risposte rapide alle tue domande"
+          action={
+            <Button 
+              variant="primary" 
+              size="sm" 
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowFAQ(true);
+              }}
+            >
+              Apri FAQ
+            </Button>
+          }
+          onClick={() => setShowFAQ(true)}
+        />
         <SettingItem
           icon={<Info size={20} />}
           label="Versione"
           value="Lume Finance v1.0.0"
-        />
-        <SettingItem
-          icon={<HelpCircle size={20} />}
-          label="Tutorial"
-          value="Guida interattiva all'utilizzo"
-          action={
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleShowTutorial();
-              }}
-              disabled
-            >
-              Avvia
-            </Button>
-          }
         />
       </Section>
 
