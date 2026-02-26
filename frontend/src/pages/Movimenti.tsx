@@ -7,6 +7,7 @@ import { Badge } from '../components/ui/Badge';
 import { theme, getCategoryColor } from '../styles/theme';
 import MovimentoForm from '../components/forms/MovimentoForm';
 import MovimentoDetailModal from '../components/MovimentoDetailModal';
+import { api } from '../config/api';
 
 interface Movimento {
   id: number;
@@ -95,26 +96,24 @@ function Movimenti() {
   const fetchData = async (page: number = 1) => {
     setLoading(true);
     try {
-      const [movRes, catRes, contiRes] = await Promise.all([
-        fetch(`/api/movimenti?page=${page}&per_page=${pagination.per_page}`),
-        fetch('/api/movimenti/categorie'),
-        fetch('/api/conti')
+      const [movData, catData, contiData] = await Promise.all([
+        api.get(`/api/movimenti?page=${page}&per_page=${pagination.per_page}`),
+        api.get('/api/movimenti/categorie'),
+        api.get('/api/conti')
       ]);
 
-      if (movRes.ok) {
-        const data = await movRes.json();
-        setMovimenti(data.items || []);
-        setPagination({
-          total: data.total || 0,
-          page: data.page || 1,
-          per_page: data.per_page || 20,
-          total_pages: data.total_pages || 0,
-        });
-      }
-      if (catRes.ok) setCategorie(await catRes.json());
-      if (contiRes.ok) setConti(await contiRes.json());
+      setMovimenti(movData.items || []);
+      setPagination({
+        total: movData.total || 0,
+        page: movData.page || 1,
+        per_page: movData.per_page || 20,
+        total_pages: movData.total_pages || 0,
+      });
+      setCategorie(catData);
+      setConti(contiData);
     } catch (error) {
       console.error('Errore:', error);
+      alert('Errore di connessione al backend. Verifica che sia avviato.');
     } finally {
       setLoading(false);
     }
@@ -153,7 +152,7 @@ function Movimenti() {
 
   const handleExport = async () => {
     try {
-      const response = await fetch('/api/movimenti/export');
+      const response = await fetch(`${api.get === undefined ? '' : await api.getUrl()}/api/movimenti/export`);
       if (!response.ok) throw new Error('Export failed');
       
       const blob = await response.blob();
@@ -240,8 +239,8 @@ function Movimenti() {
     e.stopPropagation();
     if (!confirm('Eliminare questo movimento?')) return;
     try {
-      const response = await fetch(`/api/movimenti/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchData(pagination.page);
+      await api.delete(`/api/movimenti/${id}`);
+      fetchData(pagination.page);
     } catch (error) {
       alert('Errore durante l\'eliminazione');
     }
