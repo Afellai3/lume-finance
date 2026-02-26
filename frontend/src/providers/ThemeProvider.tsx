@@ -1,61 +1,42 @@
-import { ReactNode, useState, useEffect, useMemo } from 'react';
-import { ThemeContext, ThemeMode } from '../hooks/useTheme';
-import { theme as lightTheme } from '../styles/theme';
-import { darkTheme } from '../styles/darkTheme';
+import { ReactNode, createContext, useContext } from 'react';
+import { ThemeMode, getTheme, Theme } from '../styles/theme';
+import { useTheme as useThemeHook } from '../hooks/useTheme';
+
+interface ThemeContextType {
+  mode: ThemeMode;
+  theme: Theme;
+  toggleTheme: () => void;
+  setThemeMode: (mode: ThemeMode) => void;
+  isDark: boolean;
+}
+
+const ThemeContext = createContext<ThemeContextType | null>(null);
 
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
-const STORAGE_KEY = 'lume-finance-theme';
-
-function getInitialTheme(): ThemeMode {
-  // Check localStorage
-  const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-  if (stored) return stored;
-
-  // Check system preference
-  if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
-  }
-
-  return 'light';
-}
-
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [mode, setMode] = useState<ThemeMode>(getInitialTheme);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, mode);
-    
-    // Update document class for global styles
-    document.documentElement.classList.toggle('dark', mode === 'dark');
-  }, [mode]);
-
-  const toggle = () => {
-    setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
-  const currentTheme = useMemo(() => {
-    if (mode === 'dark') {
-      return {
-        ...lightTheme,
-        colors: darkTheme.colors,
-        shadows: darkTheme.shadows
-      };
-    }
-    return lightTheme;
-  }, [mode]);
-
+  const themeValue = useThemeHook();
+  
   return (
-    <ThemeContext.Provider value={{ mode, toggle, theme: currentTheme }}>
+    <ThemeContext.Provider value={themeValue}>
       <div style={{
-        backgroundColor: currentTheme.colors.background,
+        backgroundColor: themeValue.theme.colors.background,
+        color: themeValue.theme.colors.text.primary,
         minHeight: '100vh',
-        transition: 'background-color 0.3s ease, color 0.3s ease'
+        transition: 'background-color 0.2s ease, color 0.2s ease'
       }}>
         {children}
       </div>
     </ThemeContext.Provider>
   );
 }
+
+export const useTheme = () => {
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+  return context;
+};
