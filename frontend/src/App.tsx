@@ -1,13 +1,10 @@
 import { useState } from 'react'
 import { Layout, Page } from './components/layout'
 import Dashboard from './pages/Dashboard'
-import Movimenti from './pages/Movimenti'
-import Conti from './pages/Conti'
-import Beni from './pages/Beni'
-import Budget from './pages/Budget'
-import Obiettivi from './pages/Obiettivi'
-import Ricorrenze from './pages/Ricorrenze'
-import Categorie from './pages/Categorie'
+import MovimentiWithTabs from './pages/MovimentiWithTabs'
+import Patrimonio from './pages/Patrimonio'
+import Finanza from './pages/Finanza'
+import Impostazioni from './pages/Impostazioni'
 import { ThemeProvider } from './providers/ThemeProvider'
 import { ToastProvider } from './providers/ToastProvider'
 import { ConfirmProvider } from './providers/ConfirmProvider'
@@ -22,31 +19,19 @@ function App() {
     },
     movimenti: { 
       title: 'Movimenti', 
-      subtitle: 'Gestisci entrate e uscite' 
+      subtitle: 'Gestisci entrate, uscite e ricorrenze' 
     },
-    conti: { 
-      title: 'Conti Bancari', 
-      subtitle: 'I tuoi conti e saldi' 
+    patrimonio: { 
+      title: 'Patrimonio', 
+      subtitle: 'I tuoi conti e beni' 
     },
-    ricorrenze: {
-      title: 'Movimenti Ricorrenti',
-      subtitle: 'Automatizza entrate e uscite ricorrenti'
+    finanza: { 
+      title: 'Finanza', 
+      subtitle: 'Budget e obiettivi di risparmio' 
     },
-    categorie: {
-      title: 'Categorie',
-      subtitle: 'Gestisci categorie personalizzate'
-    },
-    beni: { 
-      title: 'Beni', 
-      subtitle: 'Veicoli ed elettrodomestici' 
-    },
-    budget: { 
-      title: 'Budget', 
-      subtitle: 'Pianifica e monitora le spese' 
-    },
-    obiettivi: { 
-      title: 'Obiettivi di Risparmio', 
-      subtitle: 'Traccia i tuoi traguardi finanziari' 
+    impostazioni: { 
+      title: 'Impostazioni', 
+      subtitle: 'Configura le preferenze dell\'app' 
     },
   }
 
@@ -55,19 +40,13 @@ function App() {
       case 'dashboard':
         return <Dashboard />
       case 'movimenti':
-        return <Movimenti />
-      case 'conti':
-        return <Conti />
-      case 'ricorrenze':
-        return <Ricorrenze />
-      case 'categorie':
-        return <Categorie />
-      case 'beni':
-        return <Beni />
-      case 'budget':
-        return <Budget />
-      case 'obiettivi':
-        return <Obiettivi />
+        return <MovimentiWithTabs />
+      case 'patrimonio':
+        return <Patrimonio />
+      case 'finanza':
+        return <Finanza />
+      case 'impostazioni':
+        return <Impostazioni />
       default:
         return <Dashboard />
     }
