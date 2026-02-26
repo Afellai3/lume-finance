@@ -1,7 +1,7 @@
 import React from 'react';
 import { User } from 'lucide-react';
-import { useTheme } from '../../hooks/useTheme';
-import { ThemeToggle } from '../ui/ThemeToggle';
+import { useTheme } from '../../providers/ThemeProvider';
+import { ThemeToggle } from '../ThemeToggle';
 
 interface HeaderProps {
   pageTitle: string;
@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle, onLogoC
         
         {/* Actions */}
         <div style={actionsStyles}>
-          <ThemeToggle />
+          <ThemeToggle size="sm" variant="ghost" showLabel={true} />
           <div style={userInfoStyles}>
             <div style={avatarStyles}>
               <User size={16} />
