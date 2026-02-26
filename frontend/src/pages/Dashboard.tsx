@@ -10,6 +10,7 @@ import TrendChart from '../components/charts/TrendChart';
 import ComparisonCard from '../components/dashboard/ComparisonCard';
 import BudgetWarnings from '../components/dashboard/BudgetWarnings';
 import TopSpese from '../components/dashboard/TopSpese';
+import { api } from '../config/api';
 
 interface DashboardData {
   kpi: {
@@ -48,44 +49,32 @@ function Dashboard() {
 
   const fetchDashboard = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch('/api/analytics/dashboard?');
-      if (!response.ok) throw new Error('Errore caricamento dashboard');
-      const dashboardData = await response.json();
+      const dashboardData = await api.get('/api/analytics/dashboard?');
       
       // Fetch obiettivi and movements to calculate actual amounts
       try {
         console.log('📊 Dashboard: Fetching obiettivi and movements...');
         
-        const obiettiviRes = await fetch('/api/obiettivi');
-        if (!obiettiviRes.ok) {
-          console.error('❌ Dashboard: Failed to fetch obiettivi');
-          setData(dashboardData);
-          setLoading(false);
-          return;
-        }
-        
-        const obiettivi = await obiettiviRes.json();
+        const obiettivi = await api.get('/api/obiettivi');
         console.log('✅ Dashboard: Obiettivi fetched:', obiettivi);
         
-        // Fetch movements with multiple fallback strategies
+        // Fetch movements
         let movimenti: any[] = [];
         
         try {
-          const movimentiRes = await fetch('/api/movimenti');
-          if (movimentiRes.ok) {
-            const movimentiData = await movimentiRes.json();
-            
-            if (Array.isArray(movimentiData)) {
-              movimenti = movimentiData;
-            } else if (movimentiData.items && Array.isArray(movimentiData.items)) {
-              movimenti = movimentiData.items;
-            } else if (movimentiData.movimenti && Array.isArray(movimentiData.movimenti)) {
-              movimenti = movimentiData.movimenti;
-            }
-            
-            console.log(`✅ Dashboard: Fetched ${movimenti.length} movements`);
+          const movimentiData = await api.get('/api/movimenti');
+          
+          if (Array.isArray(movimentiData)) {
+            movimenti = movimentiData;
+          } else if (movimentiData.items && Array.isArray(movimentiData.items)) {
+            movimenti = movimentiData.items;
+          } else if (movimentiData.movimenti && Array.isArray(movimentiData.movimenti)) {
+            movimenti = movimentiData.movimenti;
           }
+          
+          console.log(`✅ Dashboard: Fetched ${movimenti.length} movements`);
         } catch (err) {
           console.error('❌ Dashboard: Error fetching movements:', err);
         }
@@ -93,16 +82,13 @@ function Dashboard() {
         // If no movements, try with limit
         if (movimenti.length === 0) {
           try {
-            const movimentiRes2 = await fetch('/api/movimenti?limit=10000');
-            if (movimentiRes2.ok) {
-              const movimentiData2 = await movimentiRes2.json();
-              if (Array.isArray(movimentiData2)) {
-                movimenti = movimentiData2;
-              } else if (movimentiData2.items) {
-                movimenti = movimentiData2.items;
-              }
-              console.log(`✅ Dashboard: Fetched ${movimenti.length} movements with limit`);
+            const movimentiData2 = await api.get('/api/movimenti?limit=10000');
+            if (Array.isArray(movimentiData2)) {
+              movimenti = movimentiData2;
+            } else if (movimentiData2.items) {
+              movimenti = movimentiData2.items;
             }
+            console.log(`✅ Dashboard: Fetched ${movimenti.length} movements with limit`);
           } catch (err) {
             console.error('❌ Dashboard: Error fetching movements with limit:', err);
           }
@@ -144,7 +130,9 @@ function Dashboard() {
       
       setData(dashboardData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore sconosciuto');
+      const errorMsg = err instanceof Error ? err.message : 'Errore di connessione al backend. Verifica che sia avviato.';
+      setError(errorMsg);
+      console.error('❌ Dashboard error:', err);
     } finally {
       setLoading(false);
     }
@@ -164,50 +152,19 @@ function Dashboard() {
       const apiPeriod = periodMap[periodFilter];
 
       // Fetch all analytics in parallel
-      const [trendRes, comparisonRes, warningsRes, topSpeseRes] = await Promise.all([
-        fetch(`/api/analytics/trend?period=${apiPeriod}`),
-        fetch('/api/analytics/comparison?period=month'),
-        fetch('/api/analytics/budget-warnings'),
-        fetch(`/api/analytics/top-spese?limit=5&period=${apiPeriod === '1m' ? 'month' : apiPeriod}`)
+      const [trend, comparison, warnings, topSpeseData] = await Promise.all([
+        api.get(`/api/analytics/trend?period=${apiPeriod}`).catch(() => []),
+        api.get('/api/analytics/comparison?period=month').catch(() => null),
+        api.get('/api/analytics/budget-warnings').catch(() => []),
+        api.get(`/api/analytics/top-spese?limit=5&period=${apiPeriod === '1m' ? 'month' : apiPeriod}`).catch(() => [])
       ]);
 
-      // Parse responses
-      if (trendRes.ok) {
-        const trend = await trendRes.json();
-        setTrendData(trend);
-        console.log('✅ Trend data loaded:', trend);
-      } else {
-        console.error('❌ Failed to load trend data');
-        setTrendData([]);
-      }
-
-      if (comparisonRes.ok) {
-        const comparison = await comparisonRes.json();
-        setComparisonData(comparison);
-        console.log('✅ Comparison data loaded:', comparison);
-      } else {
-        console.error('❌ Failed to load comparison data');
-        setComparisonData(null);
-      }
-
-      if (warningsRes.ok) {
-        const warnings = await warningsRes.json();
-        setBudgetWarnings(warnings);
-        console.log('✅ Budget warnings loaded:', warnings);
-      } else {
-        console.error('❌ Failed to load budget warnings');
-        setBudgetWarnings([]);
-      }
-
-      if (topSpeseRes.ok) {
-        const top = await topSpeseRes.json();
-        setTopSpese(top);
-        console.log('✅ Top spese loaded:', top);
-      } else {
-        console.error('❌ Failed to load top spese');
-        setTopSpese([]);
-      }
-
+      setTrendData(trend);
+      setComparisonData(comparison);
+      setBudgetWarnings(warnings);
+      setTopSpese(topSpeseData);
+      
+      console.log('✅ Analytics loaded:', { trend, comparison, warnings, topSpeseData });
     } catch (err) {
       console.error('❌ Error loading analytics:', err);
     } finally {

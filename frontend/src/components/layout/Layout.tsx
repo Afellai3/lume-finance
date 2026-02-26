@@ -1,49 +1,39 @@
-import React, { ReactNode } from 'react';
-import { Header } from './Header';
-import { BottomNav, Page } from './BottomNav';
-import { useTheme } from '../../providers/ThemeProvider';
+import { Outlet } from 'react-router-dom';
+import { useState } from 'react';
+import Header from './Header';
+import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
+import { useSafeArea } from '../../context/SafeAreaContext';
+import './Layout.css';
 
-interface LayoutProps {
-  children: ReactNode;
-  currentPage: Page;
-  onPageChange: (page: Page) => void;
-  pageTitle: string;
-  pageSubtitle?: string;
-}
-
-export const Layout: React.FC<LayoutProps> = ({
-  children,
-  currentPage,
-  onPageChange,
-  pageTitle,
-  pageSubtitle
-}) => {
-  const { theme } = useTheme();
-
-  const mainStyles: React.CSSProperties = {
-    minHeight: '100vh',
-    backgroundColor: theme.colors.background,
-    paddingBottom: '80px',
-    transition: 'background-color 0.3s ease'
-  };
-
-  const contentStyles: React.CSSProperties = {
-    maxWidth: theme.layout.maxWidth,
-    margin: '0 auto',
-    padding: theme.spacing.lg
-  };
+function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const safeArea = useSafeArea();
 
   return (
-    <div style={mainStyles}>
-      <Header 
-        pageTitle={pageTitle} 
-        pageSubtitle={pageSubtitle}
-        onLogoClick={() => onPageChange('dashboard')}
-      />
-      <main style={contentStyles}>
-        {children}
-      </main>
-      <BottomNav currentPage={currentPage} onPageChange={onPageChange} />
+    <div className="layout">
+      {/* Desktop Sidebar */}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      {/* Main Content */}
+      <div className="layout-main">
+        {/* Header with safe area top padding */}
+        <div style={{ paddingTop: `${safeArea.top}px` }}>
+          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+        </div>
+        
+        {/* Content */}
+        <main className="layout-content">
+          <Outlet />
+        </main>
+        
+        {/* Bottom Navigation with safe area bottom padding */}
+        <div style={{ paddingBottom: `${safeArea.bottom}px` }}>
+          <BottomNav />
+        </div>
+      </div>
     </div>
   );
-};
+}
+
+export default Layout;

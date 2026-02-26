@@ -1,76 +1,42 @@
-import { useState } from 'react'
-import { Layout, Page } from './components/layout'
-import Dashboard from './pages/Dashboard'
-import MovimentiWithTabs from './pages/MovimentiWithTabs'
-import Patrimonio from './pages/Patrimonio'
-import Finanza from './pages/Finanza'
-import Impostazioni from './pages/Impostazioni'
-import { ThemeProvider } from './providers/ThemeProvider'
-import { ToastProvider } from './providers/ToastProvider'
-import { ConfirmProvider } from './providers/ConfirmProvider'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { SafeAreaProvider } from './context/SafeAreaContext';
+import Layout from './components/layout/Layout';
+import Dashboard from './pages/Dashboard';
+import Movimenti from './pages/Movimenti';
+import Conti from './pages/Conti';
+import Budget from './pages/Budget';
+import Obiettivi from './pages/Obiettivi';
+import Beni from './pages/Beni';
+import BeneDetail from './pages/BeneDetail';
+import Categorie from './pages/Categorie';
+import Ricorrenze from './pages/Ricorrenze';
+import Impostazioni from './pages/Impostazioni';
+import FAQ from './pages/FAQ';
+import './App.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard')
-
-  const pageConfig: Record<Page, { title: string; subtitle?: string }> = {
-    dashboard: { 
-      title: 'Dashboard', 
-      subtitle: 'Panoramica generale delle tue finanze' 
-    },
-    movimenti: { 
-      title: 'Movimenti', 
-      subtitle: 'Gestisci entrate, uscite e ricorrenze' 
-    },
-    patrimonio: { 
-      title: 'Patrimonio', 
-      subtitle: 'I tuoi conti e beni' 
-    },
-    finanza: { 
-      title: 'Finanza', 
-      subtitle: 'Budget e obiettivi di risparmio' 
-    },
-    impostazioni: { 
-      title: 'Impostazioni', 
-      subtitle: 'Configura le preferenze dell\'app' 
-    },
-  }
-
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard />
-      case 'movimenti':
-        return <MovimentiWithTabs />
-      case 'patrimonio':
-        return <Patrimonio />
-      case 'finanza':
-        return <Finanza />
-      case 'impostazioni':
-        return <Impostazioni />
-      default:
-        return <Dashboard />
-    }
-  }
-
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <ConfirmProvider>
-          <Layout
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-            pageTitle={pageConfig[currentPage].title}
-            pageSubtitle={pageConfig[currentPage].subtitle}
-          >
-            {/* Force remount on page change to trigger useEffect and refresh data */}
-            <div key={currentPage}>
-              {renderPage()}
-            </div>
-          </Layout>
-        </ConfirmProvider>
-      </ToastProvider>
-    </ThemeProvider>
-  )
+    <SafeAreaProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="movimenti" element={<Movimenti />} />
+            <Route path="conti" element={<Conti />} />
+            <Route path="budget" element={<Budget />} />
+            <Route path="obiettivi" element={<Obiettivi />} />
+            <Route path="beni" element={<Beni />} />
+            <Route path="beni/:id" element={<BeneDetail />} />
+            <Route path="categorie" element={<Categorie />} />
+            <Route path="ricorrenze" element={<Ricorrenze />} />
+            <Route path="impostazioni" element={<Impostazioni />} />
+            <Route path="faq" element={<FAQ />} />
+          </Route>
+        </Routes>
+      </Router>
+    </SafeAreaProvider>
+  );
 }
 
-export default App
+export default App;
