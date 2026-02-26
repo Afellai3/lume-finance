@@ -1,5 +1,5 @@
 import React from 'react';
-import { User } from 'lucide-react';
+import { User, Sparkles } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
@@ -29,25 +29,31 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
     margin: '0 auto'
   };
 
-  const titleContainerStyles: React.CSSProperties = {
+  const logoContainerStyles: React.CSSProperties = {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '2px'
+    alignItems: 'center',
+    gap: theme.spacing.sm
   };
 
-  const titleStyles: React.CSSProperties = {
-    margin: 0,
-    fontSize: theme.typography.fontSize['2xl'],
+  const logoIconStyles: React.CSSProperties = {
+    width: '40px',
+    height: '40px',
+    borderRadius: theme.borderRadius.lg,
+    background: theme.colors.primary.gradient,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: 'white',
+    boxShadow: theme.shadows.primary
+  };
+
+  const logoTextStyles: React.CSSProperties = {
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.bold,
-    color: theme.colors.text.primary,
-    transition: 'color 0.3s ease'
-  };
-
-  const subtitleStyles: React.CSSProperties = {
-    margin: 0,
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.secondary,
-    transition: 'color 0.3s ease'
+    background: theme.colors.primary.gradient,
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    backgroundClip: 'text'
   };
 
   const actionsStyles: React.CSSProperties = {
@@ -87,11 +93,15 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
   return (
     <header style={headerStyles}>
       <div style={containerStyles}>
-        <div style={titleContainerStyles}>
-          <h1 style={titleStyles}>{pageTitle}</h1>
-          {pageSubtitle && <p style={subtitleStyles}>{pageSubtitle}</p>}
+        {/* Logo */}
+        <div style={logoContainerStyles}>
+          <div style={logoIconStyles}>
+            <Sparkles size={24} />
+          </div>
+          <span style={logoTextStyles}>Lume Finance</span>
         </div>
         
+        {/* Actions */}
         <div style={actionsStyles}>
           <ThemeToggle />
           <div style={userInfoStyles}>
