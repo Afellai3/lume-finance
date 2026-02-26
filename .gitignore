@@ -49,10 +49,16 @@ yarn.lock
 
 # React/Frontend
 /frontend/build/
+/frontend/dist/
 /frontend/.env.local
 /frontend/.env.development.local
 /frontend/.env.test.local
 /frontend/.env.production.local
+
+# Capacitor / Mobile
+/frontend/android/
+/frontend/ios/
+/frontend/.capacitor/
 
 # Database
 *.db
