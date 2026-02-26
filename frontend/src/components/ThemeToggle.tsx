@@ -1,16 +1,18 @@
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { useTheme } from '../hooks/useTheme';
+import { useTheme } from '../providers/ThemeProvider';
 import { Button } from './ui/Button';
 
 interface ThemeToggleProps {
   size?: 'sm' | 'md' | 'lg';
   variant?: 'ghost' | 'secondary';
+  showLabel?: boolean;
 }
 
 export const ThemeToggle: React.FC<ThemeToggleProps> = ({ 
   size = 'md',
-  variant = 'ghost'
+  variant = 'ghost',
+  showLabel = true,
 }) => {
   const { mode, toggleTheme, isDark } = useTheme();
 
@@ -23,7 +25,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       aria-label={`Passa a tema ${isDark ? 'chiaro' : 'scuro'}`}
       title={`Passa a tema ${isDark ? 'chiaro' : 'scuro'}`}
     >
-      {isDark ? 'Dark' : 'Light'}
+      {showLabel && (isDark ? 'Dark' : 'Light')}
     </Button>
   );
 };
