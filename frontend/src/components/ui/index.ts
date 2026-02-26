@@ -17,3 +17,6 @@ export type { BadgeProps } from './Badge';
 
 export { ProgressBar } from './ProgressBar';
 export type { ProgressBarProps } from './ProgressBar';
+
+export { Tabs } from './Tabs';
+export type { Tab } from './Tabs';
