@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, Sparkles } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
@@ -35,16 +35,11 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
     gap: theme.spacing.sm
   };
 
-  const logoIconStyles: React.CSSProperties = {
-    width: '40px',
+  const logoImageStyles: React.CSSProperties = {
     height: '40px',
-    borderRadius: theme.borderRadius.lg,
-    background: theme.colors.primary.gradient,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: 'white',
-    boxShadow: theme.shadows.primary
+    width: 'auto',
+    objectFit: 'contain',
+    borderRadius: theme.borderRadius.md
   };
 
   const logoTextStyles: React.CSSProperties = {
@@ -95,9 +90,11 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
       <div style={containerStyles}>
         {/* Logo */}
         <div style={logoContainerStyles}>
-          <div style={logoIconStyles}>
-            <Sparkles size={24} />
-          </div>
+          <img 
+            src="/logo.jpg" 
+            alt="Lume Finance Logo" 
+            style={logoImageStyles}
+          />
           <span style={logoTextStyles}>Lume Finance</span>
         </div>
         
