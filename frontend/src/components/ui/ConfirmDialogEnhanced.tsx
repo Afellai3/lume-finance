@@ -2,6 +2,7 @@ import React from 'react';
 import { AlertTriangle, Info, CheckCircle, X } from 'lucide-react';
 import { Button } from './Button';
 import { theme } from '../../styles/theme';
+import '../../styles/animations.css';
 
 export type ConfirmVariant = 'danger' | 'warning' | 'info' | 'success';
 
@@ -62,6 +63,26 @@ export const ConfirmDialogEnhanced: React.FC<ConfirmDialogEnhancedProps> = ({
   const config = VARIANT_CONFIG[variant];
   const Icon = config.icon;
 
+  // FIX BUG #3: Add keyboard handler for ESC key
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !loading) {
+        onCancel();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [loading, onCancel]);
+
+  // FIX BUG #4: Prevent body scroll when dialog is open
+  React.useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
+
   return (
     <>
       {/* Backdrop */}
@@ -101,6 +122,7 @@ export const ConfirmDialogEnhanced: React.FC<ConfirmDialogEnhancedProps> = ({
           {!loading && (
             <button
               onClick={onCancel}
+              aria-label="Chiudi"
               style={{
                 position: 'absolute',
                 top: theme.spacing.md,
@@ -141,6 +163,7 @@ export const ConfirmDialogEnhanced: React.FC<ConfirmDialogEnhancedProps> = ({
                 margin: `0 auto ${theme.spacing.lg}`,
                 color: config.color,
               }}
+              aria-hidden="true"
             >
               <Icon size={32} />
             </div>
@@ -199,29 +222,6 @@ export const ConfirmDialogEnhanced: React.FC<ConfirmDialogEnhancedProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Animations */}
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes scaleIn {
-          from {
-            transform: scale(0.9);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-      `}</style>
     </>
   );
 };
