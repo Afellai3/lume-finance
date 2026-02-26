@@ -1,13 +1,22 @@
 # 💰 Lume Finance
 
-> Sistema moderno di gestione finanze personali con analisi avanzata dei costi nascosti, tema dark/light, dashboard personalizzabile e interfaccia mobile-first
+> Sistema moderno di gestione finanze personali con analisi avanzata dei costi nascosti, tema dark/light, dashboard personalizzabile e **app mobile Android nativa con Capacitor**
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
+[![Capacitor](https://img.shields.io/badge/Capacitor-6.0-119EFF?logo=capacitor)](https://capacitorjs.com/)
 [![SQLite](https://img.shields.io/badge/SQLite-3-003B57?logo=sqlite)](https://www.sqlite.org/)
 
 ## 🎯 Caratteristiche Principali
+
+### 📱 App Mobile Android Nativa
+- **🤖 Capacitor**: Build APK nativo da codice React
+- **🔌 API Centralizzata**: Configurazione backend tramite file `.env`
+- **📡 Network Security**: Cleartext traffic per connessione a backend locale
+- **🎨 Safe Area Support**: Layout adattivo per notch e gesture bar
+- **🔍 Debug USB**: Chrome DevTools per debugging real-time
+- **📦 Build APK**: Generazione APK via Android Studio
 
 ### 🎨 UI/UX Moderna
 - **🌓 Tema Dark/Light Avanzato**: 
@@ -22,9 +31,6 @@
 - **🎨 Design System**: Tema coerente con gradient accent colors
 
 ### 📊 Dashboard Personalizzabile
-- **🎨 Widget Riordinabili**: Drag & drop per personalizzare layout (Coming soon)
-- **👁️ Mostra/Nascondi Widget**: Customizza quali widget visualizzare
-- **💾 Persistenza Layout**: Salvataggio automatico preferenze in localStorage
 - **Widget Disponibili**:
   - 💰 Saldo Totale
   - 📊 Entrate vs Uscite (grafico)
@@ -32,7 +38,7 @@
   - 📝 Ultimi Movimenti
   - 🎯 Budget & Obiettivi
 - **KPI in tempo reale**: Saldo totale, entrate/uscite mensili
-- **Grafici interattivi**: Spese per categoria con Chart.js
+- **Grafici interattivi**: Spese per categoria con Recharts
 - **Widget intelligenti**: Budget e obiettivi di risparmio
 - **Movimenti recenti**: Ultimi 5 movimenti con quick actions
 
@@ -64,12 +70,6 @@ Funzionalità **unica** per analizzare i costi reali di:
 #### ⚡ Elettrodomestici
 - **Consumo energetico**: Calcolo kWh × tariffa
 - **Costo orario**: Potenza × ore utilizzo
-- **Esempio**: "Lavatrice settimana"
-  ```
-  💵 Totale: 3.15€
-  ├─ Energia: 2.80€ (7 ore × 1.6kW × 0.25€/kWh)
-  └─ Ammortamento: 0.35€ (7 ore × 0.05€/h)
-  ```
 
 ### 🎯 Budget Intelligente
 - 📅 Periodi: Settimanale, Mensile, Annuale
@@ -80,39 +80,13 @@ Funzionalità **unica** per analizzare i costi reali di:
   - 🟢 **OK**: < 80% utilizzo
   - 🟠 **Attenzione**: 80-99% utilizzo
   - 🔴 **Superato**: ≥ 100% utilizzo
-- 📊 Riepilogo globale: totale budget, speso, rimanente
 
 ### 💰 Obiettivi di Risparmio
 - 🎯 Definizione target con data scadenza
 - 💵 **Allocazione fondi tramite movimenti** (campo obiettivo_id)
 - 📈 **Calcolo automatico** da movimenti in entrata collegati
 - 📊 Progress bar globale e per obiettivo
-- 🏷️ Badge priorità colorati:
-  - 🔴 Critica (5)
-  - 🟠 Alta (4)
-  - 🟡 Media (3)
-  - 🟢 Bassa (2)
-  - 🔵 Molto Bassa (1)
-- ⏰ Avviso scadenza con countdown
-- ✅ Auto-completamento al 100%
-- 📂 Separazione attivi/completati
-
-### 🏦 Conti
-- 💳 Multi-conto: Carta, Contante, Risparmio, Investimenti
-- 💰 Calcolo saldo automatico dai movimenti
-- 🔄 Attivazione/Disattivazione
-- 🌍 Multi-valuta (EUR default)
-
-### 🚗 Gestione Beni
-- **Veicoli**:
-  - Tipo carburante (Benzina, Diesel, Elettrico, Ibrido, GPL)
-  - Consumo medio (L/100km o kWh/100km)
-  - Costo manutenzione per km
-- **Elettrodomestici**:
-  - Potenza (Watt)
-  - Ore medie utilizzo giornaliero
-  - Consumo annuale stimato
-- **Ammortamento automatico** con durata configurabile
+- 🏷️ Badge priorità colorati
 
 ---
 
@@ -121,51 +95,29 @@ Funzionalità **unica** per analizzare i costi reali di:
 ```
 lume-finance/
 ├── backend/                 # FastAPI REST API
-│   ├── routes/
-│   │   ├── analytics.py    # Dashboard e analytics
-│   │   ├── movimenti.py    # CRUD movimenti + scomposizione
-│   │   ├── conti.py        # Gestione conti
-│   │   ├── budget.py       # Budget con logica prioritaria
-│   │   ├── obiettivi.py    # Obiettivi risparmio (calcolo da movimenti)
-│   │   └── beni.py         # Veicoli ed elettrodomestici
-│   ├── database.py         # SQLite connection + migrations
+│   ├── routes/             # Endpoints
+│   ├── database.py         # SQLite + migrations
 │   └── main.py             # FastAPI app
-├── frontend/               # React + TypeScript
+├── frontend/               # React + TypeScript + Capacitor
 │   ├── src/
+│   │   ├── config/
+│   │   │   └── api.ts      # ⭐ Client API centralizzato
 │   │   ├── components/
-│   │   │   ├── layout/           # Header, BottomNav, Layout
-│   │   │   ├── ui/               # ThemeToggle, ConfirmDialog
-│   │   │   ├── DashboardCustomizer.tsx  # Modal personalizzazione
-│   │   │   └── forms/            # MovimentoForm, ContoForm, ecc.
-│   │   ├── pages/                # Dashboard, Movimenti, Budget, ecc.
-│   │   ├── hooks/
-│   │   │   ├── useTheme.ts       # Hook gestione tema
-│   │   │   ├── useDashboardLayout.ts  # Hook layout personalizzabile
-│   │   │   └── useApi.ts
+│   │   ├── pages/
 │   │   ├── providers/
-│   │   │   └── ThemeProvider.tsx # Context globale tema
-│   │   ├── styles/
-│   │   │   ├── theme.ts          # Design system con dark/light
-│   │   │   └── global.css        # CSS globale con variabili
-│   │   └── App.tsx               # Router principale
-│   └── public/
-│       └── logo.jpg              # Logo aziendale
+│   │   └── App.tsx
+│   ├── android/            # 🤖 Progetto Android nativo (generato)
+│   ├── capacitor.config.ts # Config Capacitor
+│   ├── .env                # ⚠️ VITE_API_URL (OBBLIGATORIO per mobile)
+│   └── package.json
 ├── database/
-│   ├── schema.sql                # Schema database
-│   ├── seed_data.sql             # Dati demo
-│   └── migrations/               # Migrations SQL incrementali
-│       ├── 001_add_icona_colore_categorie.sql
-│       ├── 002_add_obiettivi_table.sql
-│       ├── 003_add_scomposizione_columns.sql
-│       └── 004_add_budget_id_to_movimenti.sql
-├── docs/                         # 📚 Documentazione completa
-│   ├── STEP_5_CUSTOMIZABLE_DASHBOARD.md
-│   ├── DARK_MODE_SETUP.md
-│   ├── DARK_MODE_FIX.md
-│   ├── FIX_ALL_THEME_IMPORTS.md
-│   └── DASHBOARD_INTEGRATION_EXAMPLE.md
+│   ├── schema.sql
+│   └── migrations/
+├── docs/                   # 📚 Documentazione
+│   ├── MOBILE_DEBUG_CONTEXT.md  # ⭐ Context per debug mobile
+│   └── ...
 └── data/
-    └── lume.db                   # Database SQLite (generato)
+    └── lume.db
 ```
 
 ---
@@ -173,323 +125,219 @@ lume-finance/
 ## 🚀 Setup & Installazione
 
 ### Prerequisiti
-- **Python 3.11+** (testato su 3.13)
-- **Node.js 18+** (testato su 18.x)
+- **Python 3.11+**
+- **Node.js 18+**
+- **Android Studio** (per build APK)
 - **Git**
 
-### 1️⃣ Clone Repository
+### 1️⃣ Backend Setup
 ```bash
-git clone https://github.com/Afellai3/lume-finance.git
 cd lume-finance
-```
-
-### 2️⃣ Backend Setup
-```bash
-# Crea virtual environment
 python -m venv venv
-
-# Attiva venv
-# Windows:
-venv\Scripts\activate
-# Linux/Mac:
-source venv/bin/activate
-
-# Installa dipendenze
+venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-
-# Avvia server (inizializza DB automaticamente)
 uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Backend disponibile su: **http://localhost:8000**
-
-### 3️⃣ Frontend Setup
+### 2️⃣ Frontend Web Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend disponibile su: **http://localhost:3000**
+### 3️⃣ Mobile App Setup (Android)
 
-### 🪟 Avvio Rapido (Windows)
+#### Configura IP Backend
 ```bash
-start.bat
-```
-Avvia automaticamente backend + frontend in finestre separate.
+cd frontend
 
----
+# Crea file .env con IP del PC sulla rete locale
+echo VITE_API_URL=http://10.0.0.233:8000 > .env
 
-## 🎨 Sistema di Temi (Dark/Light)
-
-### Features
-- **Persistenza**: Tema salvato in `localStorage` con chiave `theme_mode`
-- **Auto-detect**: Rileva preferenza sistema con `prefers-color-scheme`
-- **Transizioni**: Tutti i colori con `transition: 200ms ease`
-- **Contrasti WCAG AAA**: Text su background = 16.5:1
-- **Context Globale**: Tema condiviso tra tutti i componenti
-
-### Palette Colori
-
-#### Light Mode
-```typescript
-background: '#F8F9FA'      // Grigio molto chiaro
-surface: '#FFFFFF'         // Bianco
-text.primary: '#212121'    // Quasi nero
-text.secondary: '#757575'  // Grigio medio
-border.light: '#E0E0E0'    // Bordi soft
+# Verifica IP con:
+# Windows: ipconfig
+# Linux/Mac: ifconfig
 ```
 
-#### Dark Mode (High Contrast)
-```typescript
-background: '#0F0F0F'      // Nero profondo
-surface: '#1A1A1A'         // Grigio molto scuro
-text.primary: '#F5F5F5'    // Quasi bianco (contrasto 16.5:1)
-text.secondary: '#C0C0C0'  // Grigio chiaro (contrasto 9.8:1)
-border.light: '#2A2A2A'    // Bordi visibili ma discreti
+#### Build APK
+```bash
+# Installa dipendenze Capacitor
+npm install @capacitor/core @capacitor/cli @capacitor/android
+
+# Build progetto React
+npm run build
+
+# Genera progetto Android
+npx cap add android
+npx cap sync
+
+# Apri Android Studio
+npx cap open android
 ```
 
-### Utilizzo nei Componenti
+#### In Android Studio
+1. **Build → Clean Project**
+2. **Build → Rebuild Project**
+3. **Build → Build Bundle(s) / APK(s) → Build APK(s)**
+4. Installa APK su telefono
 
-```typescript
-import { useTheme } from '../providers/ThemeProvider';
+### 🔍 Debug Mobile
 
-function MyComponent() {
-  const { theme, mode, toggleTheme, isDark } = useTheme();
-  
-  return (
-    <div style={{
-      backgroundColor: theme.colors.surface,
-      color: theme.colors.text.primary,
-      border: `1px solid ${theme.colors.border.light}`
-    }}>
-      <button onClick={toggleTheme}>
-        {isDark ? '☀️ Light' : '🌙 Dark'}
-      </button>
-    </div>
-  );
-}
-```
+```bash
+# 1. Abilita Debug USB sul telefono
+# Impostazioni → Info → Tocca 7 volte "Numero build"
+# Impostazioni → Opzioni sviluppatore → Debug USB
 
-**⚠️ Importante**: Tutti i componenti devono importare `useTheme` da `providers/ThemeProvider`, NON da `hooks/useTheme` (altrimenti creano istanze separate).
+# 2. Collega telefono via USB
 
----
-
-## 🗄️ Database
-
-### Schema Principale
-```sql
--- Conti bancari
-conti (id, nome, tipo, saldo, valuta, attivo)
-
--- Categorie entrate/uscite
-categorie (id, nome, tipo, icona, colore)
-
--- Movimenti finanziari
-movimenti (
-  id, data, importo, tipo, categoria_id, conto_id, 
-  budget_id,       -- ⭐ Collegamento esplicito budget
-  obiettivo_id,    -- ⭐ Allocazione a obiettivo risparmio
-  descrizione, ricorrente,
-  bene_id, km_percorsi, ore_utilizzo,  -- Scomposizione costi
-  scomposizione_json
-)
-
--- Budget per categoria
-budget (id, categoria_id, importo, periodo, data_inizio, attivo)
-
--- Obiettivi risparmio
-obiettivi_risparmio (
-  id, nome, importo_target, importo_attuale,  -- importo_attuale DEPRECATO
-  data_target, priorita, completato
-)
-
--- Beni (veicoli/elettrodomestici)
-beni (
-  id, nome, tipo, data_acquisto, prezzo_acquisto,
-  veicolo_tipo_carburante, veicolo_consumo_medio,
-  elettrodomestico_potenza, elettrodomestico_ore_medie_giorno
-)
-```
-
-### ⚠️ Nota Importante: Campo `importo_attuale` Deprecato
-
-Il campo `importo_attuale` in `obiettivi_risparmio` **NON viene più utilizzato**. L'importo è **calcolato automaticamente** dalla somma dei movimenti in entrata con `obiettivo_id`:
-
-```sql
-SELECT SUM(importo) FROM movimenti 
-WHERE obiettivo_id = ? AND tipo = 'entrata'
-```
-
-**Motivo**: Garantisce coerenza dati - unica fonte di verità è la tabella movimenti.
-
----
-
-## 📡 API Endpoints
-
-### Analytics
-```http
-GET  /api/analytics/dashboard          # KPI e statistiche
-GET  /api/analytics/spese-per-categoria # Grafico categorie
-```
-
-### Movimenti
-```http
-GET    /api/movimenti                  # Lista movimenti
-POST   /api/movimenti                  # Crea movimento
-GET    /api/movimenti/{id}             # Dettaglio movimento
-PUT    /api/movimenti/{id}             # Aggiorna movimento
-DELETE /api/movimenti/{id}             # Elimina movimento
-GET    /api/movimenti/categorie        # Lista categorie
-```
-
-### Budget
-```http
-GET    /api/budget                     # Lista budget
-POST   /api/budget                     # Crea budget
-GET    /api/budget/{id}                # Dettaglio budget
-PUT    /api/budget/{id}                # Aggiorna budget
-DELETE /api/budget/{id}                # Elimina budget
-GET    /api/budget/riepilogo/{periodo} # Riepilogo (mensile/annuale)
-```
-
-### Obiettivi
-```http
-GET    /api/obiettivi                  # Lista obiettivi (importo calcolato)
-POST   /api/obiettivi                  # Crea obiettivo
-GET    /api/obiettivi/{id}             # Dettaglio obiettivo
-PUT    /api/obiettivi/{id}             # Aggiorna obiettivo
-DELETE /api/obiettivi/{id}             # Elimina obiettivo
-```
-
-### Conti & Beni
-```http
-GET/POST/PUT/DELETE  /api/conti        # CRUD conti
-GET/POST/PUT/DELETE  /api/beni         # CRUD beni
+# 3. Chrome DevTools
+# Apri Chrome: chrome://inspect/#devices
+# Click "inspect" su Lume Finance
 ```
 
 ---
 
-## 🎨 Frontend Components
+## ⚙️ Configurazione Mobile
 
-### Layout & Navigation
-```typescript
-Layout.tsx              // Container principale con Header e BottomNav
-Header.tsx              // Logo cliccabile + ThemeToggle + UserInfo
-BottomNav.tsx           // 5 tab navigation
+### File `.env` (OBBLIGATORIO)
+```bash
+# frontend/.env
+VITE_API_URL=http://10.0.0.233:8000
 ```
 
-### Theme System
+### `capacitor.config.ts`
 ```typescript
-useTheme.ts             // Hook per gestione tema dark/light
-ThemeProvider.tsx       // Context globale condiviso
-ThemeToggle.tsx         // Switch animato Sun/Moon
-theme.ts                // Design system (palette + spacing)
-global.css              // CSS variabili per dark mode
+import { CapacitorConfig } from '@capacitor/core';
+
+const config: CapacitorConfig = {
+  appId: 'com.lume.finance',
+  appName: 'Lume Finance',
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+    cleartext: true  // ⚠️ Necessario per HTTP locale
+  }
+};
+
+export default config;
 ```
 
-### Dashboard Personalizzabile
+### Client API Centralizzato
 ```typescript
-useDashboardLayout.ts       // Hook gestione widget
-DashboardCustomizer.tsx     // Modal personalizzazione
+// frontend/src/config/api.ts
+import { Capacitor } from '@capacitor/core';
+
+const getApiUrl = (): string => {
+  if (Capacitor.isNativePlatform()) {
+    // Mobile: usa VITE_API_URL da .env
+    return import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  }
+  // Web: usa path relativi (proxy Vite)
+  return '';
+};
+
+export const api = {
+  async get(endpoint: string) {
+    const response = await fetch(`${getApiUrl()}${endpoint}`);
+    return await response.json();
+  },
+  // ... post, put, delete
+};
 ```
 
-**Features**:
-- Mostra/nascondi widget con toggle Eye/EyeOff
-- Riordina widget con frecce ⬆️⬇️
-- Reset a layout default
-- Persistenza in `localStorage` (key: `dashboard_layout_v1`)
+**Utilizzo**:
+```typescript
+import { api } from '../config/api';
+
+// Invece di:
+// const res = await fetch('/api/movimenti');
+
+// Usa:
+const movimenti = await api.get('/api/movimenti');
+```
 
 ---
 
-## 🐛 Bug Risolti (Feb 2026)
+## 🐛 Problemi Comuni Mobile
 
-### Database & Backend
-- ✅ `conn.commit()` mancante in Conti/Beni/Budget
-- ✅ Nome colonna `creato_il` → `data_creazione` in Obiettivi
-- ✅ Encoding UTF-8 per Windows (fix UnicodeDecodeError)
-- ✅ Schema già esistente: skip se DB presente
-- ✅ **Obiettivi con valori diversi**: GET `/api/obiettivi` ora calcola da movimenti
+### ❌ "Failed to fetch" / "Unexpected token '<'"
+**Causa**: App chiama `localhost` invece del PC  
+**Fix**: 
+1. Verifica `.env` con IP corretto
+2. Rebuild: `npm run build && npx cap sync`
+3. Rebuilda APK in Android Studio
 
-### Frontend & UI
-- ✅ CSS mancante per BudgetForm
-- ✅ Struttura dati API Budget errata
-- ✅ Import errato `dashboard` → `analytics`
-- ✅ **Logo cliccabile**: Click logo → torna alla Dashboard
-- ✅ **Tema dark/light**: Switch persistente con localStorage
-- ✅ **Bottom navigation**: Icone Material Design con hover effects
-- ✅ **Dark mode contrasti**: Text primary `#F5F5F5` (era `#E8E8E8`) → +10% luminosità
-- ✅ **ThemeToggle non funzionava**: Fix import da `providers/ThemeProvider`
-- ✅ **Layout/Header import errato**: Ora usano context condiviso
-- ✅ **Testi non leggibili in dark**: Background `#0F0F0F`, text secondary `#C0C0C0`
+### ❌ Header coperto dal notch
+**Fix**: Layout usa CSS `safe-area-inset-top`
+```css
+padding-top: env(safe-area-inset-top);
+```
+
+### ❌ Bottom nav copre tasti Android
+**Fix**: Usa `safe-area-inset-bottom`
+```css
+padding-bottom: calc(80px + env(safe-area-inset-bottom));
+```
+
+### ❌ Console vuota in Chrome DevTools
+**Fix**: 
+1. Telefono in Debug USB
+2. `chrome://inspect/#devices`
+3. Click "inspect" su app
 
 ---
 
 ## 📚 Documentazione
 
-Documentazione completa nella cartella `/docs`:
-
-- **[STEP_5_CUSTOMIZABLE_DASHBOARD.md](docs/STEP_5_CUSTOMIZABLE_DASHBOARD.md)**: Guida dashboard personalizzabile
-- **[DARK_MODE_SETUP.md](docs/DARK_MODE_SETUP.md)**: Setup completo tema dark/light
-- **[DARK_MODE_FIX.md](docs/DARK_MODE_FIX.md)**: Fix contrasti e problemi comuni
-- **[FIX_ALL_THEME_IMPORTS.md](docs/FIX_ALL_THEME_IMPORTS.md)**: Come fixare import useTheme
-- **[DASHBOARD_INTEGRATION_EXAMPLE.md](docs/DASHBOARD_INTEGRATION_EXAMPLE.md)**: Esempi integrazione
+- **[MOBILE_DEBUG_CONTEXT.md](docs/MOBILE_DEBUG_CONTEXT.md)**: Stato attuale debug mobile
+- **[DARK_MODE_SETUP.md](docs/DARK_MODE_SETUP.md)**: Setup tema dark/light
+- **[API_CENTRALIZED.md](docs/API_CENTRALIZED.md)**: Guida client API
 
 ---
 
-## 📝 TODO & Roadmap
+## 📝 Stato Progetto (Feb 2026)
 
-### In Sviluppo
-- [ ] Export PDF/Excel dei report
-- [ ] Notifiche budget superati
-- [ ] Grafici trend mensili
-- [ ] Gestione automatica movimenti ricorrenti
-- [ ] Drag & Drop riordino widget dashboard
+### ✅ Completato
+- Backend FastAPI completo
+- Frontend React + TypeScript
+- Tema Dark/Light con contrasti WCAG AAA
+- Dashboard con KPI real-time
+- CRUD Movimenti, Conti, Budget, Obiettivi
+- Scomposizione costi veicoli/elettrodomestici
+- Build APK Android con Capacitor
+- Client API centralizzato
+- Safe area support (parziale)
 
-### Future Features
-- [ ] Multi-utente con autenticazione
-- [ ] Cloud sync e backup automatico
-- [ ] Mobile app (React Native)
-- [ ] Integrazione API bancarie (PSD2)
-- [ ] Machine Learning per previsioni spesa
-- [ ] Tag personalizzati oltre le categorie
-- [ ] PWA (Progressive Web App) installabile
+### 🚧 In Sviluppo
+- **Debug mobile**: Errore "Failed to fetch" (priorità alta)
+- **Safe area bottom**: Bottom nav copre gesture bar
+- **Logging avanzato**: Console Chrome DevTools
+
+### 📋 TODO
+- Export PDF/Excel
+- Notifiche push
+- PWA installabile
+- Cloud sync
 
 ---
 
 ## 🤝 Contributi
 
-Progetto in sviluppo attivo. Per contribuire:
-
-1. Fork il repository
-2. Crea un branch feature (`git checkout -b feature/nuova-funzionalita`)
-3. Commit modifiche (`git commit -m 'Aggiungi nuova funzionalità'`)
-4. Push al branch (`git push origin feature/nuova-funzionalita`)
-5. Apri una Pull Request
-
----
-
-## 📄 Licenza
-
-MIT License - vedi file LICENSE per dettagli.
+Per contribuire:
+1. Fork repository
+2. Crea branch feature
+3. Commit modifiche
+4. Push e apri PR
 
 ---
 
 ## 👤 Autore
 
 **Sviluppato da**: Afellai3  
+**Ruolo**: Ingegnere Gestionale e Consulente Informatico  
 **Contesto**: Data Analyst con Power BI in azienda trasporto e logistica  
-**Località**: Montoro Superiore, Provincia di Salerno, Campania, IT  
-
----
-
-## 🙏 Ringraziamenti
-
-- FastAPI per l'eccellente framework backend
-- React team per l'ecosistema frontend
-- Chart.js per i grafici interattivi
-- SQLite per il database leggero e potente
-- Lucide React per le icone
+**Località**: Montoro Superiore, Campania, IT  
 
 ---
 
