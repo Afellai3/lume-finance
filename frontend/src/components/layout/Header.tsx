@@ -6,9 +6,10 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 interface HeaderProps {
   pageTitle: string;
   pageSubtitle?: string;
+  onLogoClick?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
+export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle, onLogoClick }) => {
   const { theme } = useTheme();
 
   const headerStyles: React.CSSProperties = {
@@ -33,7 +34,9 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
     height: '40px',
     width: 'auto',
     objectFit: 'contain',
-    borderRadius: theme.borderRadius.md
+    borderRadius: theme.borderRadius.md,
+    cursor: 'pointer',
+    transition: 'opacity 0.2s ease, transform 0.2s ease'
   };
 
   const actionsStyles: React.CSSProperties = {
@@ -73,11 +76,20 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
   return (
     <header style={headerStyles}>
       <div style={containerStyles}>
-        {/* Logo - Only Image */}
+        {/* Logo - Clickable */}
         <img 
           src="/logo.jpg" 
           alt="Lume Finance Logo" 
           style={logoImageStyles}
+          onClick={onLogoClick}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+            e.currentTarget.style.transform = 'scale(0.98)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
         />
         
         {/* Actions */}

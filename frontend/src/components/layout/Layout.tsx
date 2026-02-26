@@ -35,7 +35,11 @@ export const Layout: React.FC<LayoutProps> = ({
 
   return (
     <div style={mainStyles}>
-      <Header pageTitle={pageTitle} pageSubtitle={pageSubtitle} />
+      <Header 
+        pageTitle={pageTitle} 
+        pageSubtitle={pageSubtitle}
+        onLogoClick={() => onPageChange('dashboard')}
+      />
       <main style={contentStyles}>
         {children}
       </main>
