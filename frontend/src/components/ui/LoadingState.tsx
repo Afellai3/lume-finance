@@ -1,6 +1,7 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
 import { theme } from '../../styles/theme';
+import '../../styles/animations.css';
 
 export type LoadingSize = 'sm' | 'md' | 'lg' | 'xl';
 export type LoadingVariant = 'spinner' | 'dots' | 'pulse' | 'skeleton';
@@ -59,6 +60,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
               animation: 'spin 1s linear infinite',
               color: theme.colors.primary.DEFAULT,
             }}
+            role="status"
+            aria-label={message || 'Caricamento in corso'}
           >
             <Loader2 size={config.spinner} />
           </div>
@@ -71,6 +74,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
               display: 'flex',
               gap: theme.spacing.xs,
             }}
+            role="status"
+            aria-label={message || 'Caricamento in corso'}
           >
             {[0, 1, 2].map((i) => (
               <div
@@ -97,6 +102,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
               backgroundColor: theme.colors.primary.DEFAULT,
               animation: 'pulse 1.5s ease-in-out infinite',
             }}
+            role="status"
+            aria-label={message || 'Caricamento in corso'}
           />
         );
 
@@ -110,6 +117,8 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
               flexDirection: 'column',
               gap: theme.spacing.sm,
             }}
+            role="status"
+            aria-label={message || 'Caricamento in corso'}
           >
             {[0, 1, 2].map((i) => (
               <div
@@ -143,56 +152,11 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
             fontWeight: theme.typography.fontWeight.medium,
             textAlign: 'center',
           }}
+          aria-live="polite"
         >
           {message}
         </p>
       )}
-
-      {/* Animations */}
-      <style>{`
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @keyframes bounce {
-          0%, 80%, 100% {
-            transform: scale(0);
-            opacity: 0.5;
-          }
-          40% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.5;
-            transform: scale(0.8);
-          }
-        }
-
-        @keyframes shimmer {
-          0% {
-            opacity: 0.6;
-          }
-          50% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0.6;
-          }
-        }
-      `}</style>
     </div>
   );
 };
@@ -216,14 +180,10 @@ export const InlineLoading: React.FC<InlineLoadingProps> = ({
         animation: 'spin 1s linear infinite',
         color,
       }}
+      role="status"
+      aria-label="Caricamento"
     >
       <Loader2 size={size} />
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
