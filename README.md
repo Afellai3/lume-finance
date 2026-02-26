@@ -1,6 +1,6 @@
 # 💰 Lume Finance
 
-> Sistema moderno di gestione finanze personali con analisi avanzata dei costi nascosti, tema dark/light e interfaccia mobile-first
+> Sistema moderno di gestione finanze personali con analisi avanzata dei costi nascosti, tema dark/light, dashboard personalizzabile e interfaccia mobile-first
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev/)
@@ -10,14 +10,27 @@
 ## 🎯 Caratteristiche Principali
 
 ### 🎨 UI/UX Moderna
-- **🌓 Tema Dark/Light**: Switch seamless con persistenza localStorage
+- **🌓 Tema Dark/Light Avanzato**: 
+  - Switch seamless con persistenza localStorage
+  - Contrasti WCAG AAA (16.5:1) per accessibilità
+  - Transizioni fluide tra temi
+  - Auto-detect preferenza sistema
 - **📱 Mobile-First**: Interfaccia ottimizzata per smartphone
 - **🧭 Bottom Navigation**: Navigazione rapida con icone intuitive
 - **🖼️ Header con Logo Cliccabile**: Click sul logo → torna alla Dashboard
 - **⚡ Animazioni Fluide**: Transizioni smooth e hover effects
 - **🎨 Design System**: Tema coerente con gradient accent colors
 
-### 📊 Dashboard
+### 📊 Dashboard Personalizzabile
+- **🎨 Widget Riordinabili**: Drag & drop per personalizzare layout (Coming soon)
+- **👁️ Mostra/Nascondi Widget**: Customizza quali widget visualizzare
+- **💾 Persistenza Layout**: Salvataggio automatico preferenze in localStorage
+- **Widget Disponibili**:
+  - 💰 Saldo Totale
+  - 📊 Entrate vs Uscite (grafico)
+  - 🏆 Top Categorie spesa
+  - 📝 Ultimi Movimenti
+  - 🎯 Budget & Obiettivi
 - **KPI in tempo reale**: Saldo totale, entrate/uscite mensili
 - **Grafici interattivi**: Spese per categoria con Chart.js
 - **Widget intelligenti**: Budget e obiettivi di risparmio
@@ -27,10 +40,11 @@
 - ✅ CRUD completo (Create, Read, Update, Delete)
 - 🏦 Collegamento conti bancari
 - 🏷️ Categorizzazione automatica
-- 🎯 **Budget esplicito prioritario** (nuova feature!)
+- 🎯 **Budget esplicito prioritario** (campo budget_id)
 - 💰 **Allocazione a obiettivi di risparmio** (campo obiettivo_id)
 - 🔄 Supporto movimenti ricorrenti
 - 📝 Descrizioni e note
+- 🔍 Ricerca avanzata per descrizione, categoria, note
 
 ### 🔥 Scomposizione Costi Nascosti
 Funzionalità **unica** per analizzare i costi reali di:
@@ -119,25 +133,39 @@ lume-finance/
 ├── frontend/               # React + TypeScript
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── layout/     # Header, BottomNav, Layout
-│   │   │   ├── ui/         # ThemeToggle, ConfirmDialog
-│   │   │   └── forms/      # MovimentoForm, ContoForm, ecc.
-│   │   ├── pages/          # Dashboard, Movimenti, Budget, ecc.
-│   │   ├── hooks/          # useTheme, useApi
-│   │   ├── theme/          # Theme system (dark/light)
-│   │   └── App.tsx         # Router principale
+│   │   │   ├── layout/           # Header, BottomNav, Layout
+│   │   │   ├── ui/               # ThemeToggle, ConfirmDialog
+│   │   │   ├── DashboardCustomizer.tsx  # Modal personalizzazione
+│   │   │   └── forms/            # MovimentoForm, ContoForm, ecc.
+│   │   ├── pages/                # Dashboard, Movimenti, Budget, ecc.
+│   │   ├── hooks/
+│   │   │   ├── useTheme.ts       # Hook gestione tema
+│   │   │   ├── useDashboardLayout.ts  # Hook layout personalizzabile
+│   │   │   └── useApi.ts
+│   │   ├── providers/
+│   │   │   └── ThemeProvider.tsx # Context globale tema
+│   │   ├── styles/
+│   │   │   ├── theme.ts          # Design system con dark/light
+│   │   │   └── global.css        # CSS globale con variabili
+│   │   └── App.tsx               # Router principale
 │   └── public/
-│       └── logo.jpg        # Logo aziendale
+│       └── logo.jpg              # Logo aziendale
 ├── database/
-│   ├── schema.sql          # Schema database
-│   ├── seed_data.sql       # Dati demo
-│   └── migrations/         # Migrations SQL incrementali
+│   ├── schema.sql                # Schema database
+│   ├── seed_data.sql             # Dati demo
+│   └── migrations/               # Migrations SQL incrementali
 │       ├── 001_add_icona_colore_categorie.sql
 │       ├── 002_add_obiettivi_table.sql
 │       ├── 003_add_scomposizione_columns.sql
 │       └── 004_add_budget_id_to_movimenti.sql
+├── docs/                         # 📚 Documentazione completa
+│   ├── STEP_5_CUSTOMIZABLE_DASHBOARD.md
+│   ├── DARK_MODE_SETUP.md
+│   ├── DARK_MODE_FIX.md
+│   ├── FIX_ALL_THEME_IMPORTS.md
+│   └── DASHBOARD_INTEGRATION_EXAMPLE.md
 └── data/
-    └── lume.db            # Database SQLite (generato)
+    └── lume.db                   # Database SQLite (generato)
 ```
 
 ---
@@ -192,6 +220,61 @@ Avvia automaticamente backend + frontend in finestre separate.
 
 ---
 
+## 🎨 Sistema di Temi (Dark/Light)
+
+### Features
+- **Persistenza**: Tema salvato in `localStorage` con chiave `theme_mode`
+- **Auto-detect**: Rileva preferenza sistema con `prefers-color-scheme`
+- **Transizioni**: Tutti i colori con `transition: 200ms ease`
+- **Contrasti WCAG AAA**: Text su background = 16.5:1
+- **Context Globale**: Tema condiviso tra tutti i componenti
+
+### Palette Colori
+
+#### Light Mode
+```typescript
+background: '#F8F9FA'      // Grigio molto chiaro
+surface: '#FFFFFF'         // Bianco
+text.primary: '#212121'    // Quasi nero
+text.secondary: '#757575'  // Grigio medio
+border.light: '#E0E0E0'    // Bordi soft
+```
+
+#### Dark Mode (High Contrast)
+```typescript
+background: '#0F0F0F'      // Nero profondo
+surface: '#1A1A1A'         // Grigio molto scuro
+text.primary: '#F5F5F5'    // Quasi bianco (contrasto 16.5:1)
+text.secondary: '#C0C0C0'  // Grigio chiaro (contrasto 9.8:1)
+border.light: '#2A2A2A'    // Bordi visibili ma discreti
+```
+
+### Utilizzo nei Componenti
+
+```typescript
+import { useTheme } from '../providers/ThemeProvider';
+
+function MyComponent() {
+  const { theme, mode, toggleTheme, isDark } = useTheme();
+  
+  return (
+    <div style={{
+      backgroundColor: theme.colors.surface,
+      color: theme.colors.text.primary,
+      border: `1px solid ${theme.colors.border.light}`
+    }}>
+      <button onClick={toggleTheme}>
+        {isDark ? '☀️ Light' : '🌙 Dark'}
+      </button>
+    </div>
+  );
+}
+```
+
+**⚠️ Importante**: Tutti i componenti devono importare `useTheme` da `providers/ThemeProvider`, NON da `hooks/useTheme` (altrimenti creano istanze separate).
+
+---
+
 ## 🗄️ Database
 
 ### Schema Principale
@@ -240,18 +323,6 @@ WHERE obiettivo_id = ? AND tipo = 'entrata'
 
 **Motivo**: Garantisce coerenza dati - unica fonte di verità è la tabella movimenti.
 
-### Migrations
-Le migrations vengono eseguite automaticamente all'avvio:
-
-```bash
-Database already exists, skipping schema
-Executing migration: 003_add_scomposizione_columns.sql
-  → 003_add_scomposizione_columns.sql already applied
-Executing migration: 004_add_budget_id_to_movimenti.sql
-  ✓ 004_add_budget_id_to_movimenti.sql completed
-✓ Database initialized successfully
-```
-
 ---
 
 ## 📡 API Endpoints
@@ -270,21 +341,6 @@ GET    /api/movimenti/{id}             # Dettaglio movimento
 PUT    /api/movimenti/{id}             # Aggiorna movimento
 DELETE /api/movimenti/{id}             # Elimina movimento
 GET    /api/movimenti/categorie        # Lista categorie
-```
-
-**Payload Movimento con Budget e Obiettivo:**
-```json
-{
-  "data": "2026-02-25",
-  "importo": 50.00,
-  "tipo": "entrata",
-  "categoria_id": 5,
-  "budget_id": 3,        // ⭐ Budget esplicito (priorità)
-  "obiettivo_id": 2,     // ⭐ Alloca a "Vacanza Estiva"
-  "conto_id": 1,
-  "descrizione": "Allocazione risparmio mensile",
-  "bene_id": null        // Non necessario per obiettivi
-}
 ```
 
 ### Budget
@@ -306,28 +362,10 @@ PUT    /api/obiettivi/{id}             # Aggiorna obiettivo
 DELETE /api/obiettivi/{id}             # Elimina obiettivo
 ```
 
-**⚠️ Endpoints Deprecati (ritornano 410 Gone):**
+### Conti & Beni
 ```http
-POST   /api/obiettivi/{id}/aggiungi    # Usa movimenti con obiettivo_id
-POST   /api/obiettivi/{id}/rimuovi     # Elimina/modifica movimenti
-```
-
-### Conti
-```http
-GET    /api/conti                      # Lista conti
-POST   /api/conti                      # Crea conto
-GET    /api/conti/{id}                 # Dettaglio conto
-PUT    /api/conti/{id}                 # Aggiorna conto
-DELETE /api/conti/{id}                 # Elimina conto
-```
-
-### Beni
-```http
-GET    /api/beni                       # Lista beni
-POST   /api/beni                       # Crea bene
-GET    /api/beni/{id}                  # Dettaglio bene
-PUT    /api/beni/{id}                  # Aggiorna bene
-DELETE /api/beni/{id}                  # Elimina bene
+GET/POST/PUT/DELETE  /api/conti        # CRUD conti
+GET/POST/PUT/DELETE  /api/beni         # CRUD beni
 ```
 
 ---
@@ -338,161 +376,64 @@ DELETE /api/beni/{id}                  # Elimina bene
 ```typescript
 Layout.tsx              // Container principale con Header e BottomNav
 Header.tsx              // Logo cliccabile + ThemeToggle + UserInfo
-BottomNav.tsx           // 5 tab navigation (Dashboard, Movimenti, Conti, Budget, Obiettivi)
+BottomNav.tsx           // 5 tab navigation
 ```
 
 ### Theme System
 ```typescript
-useTheme.tsx            // Hook per gestione tema dark/light
+useTheme.ts             // Hook per gestione tema dark/light
+ThemeProvider.tsx       // Context globale condiviso
 ThemeToggle.tsx         // Switch animato Sun/Moon
-theme.ts                // Palette colori + spacing + typography
+theme.ts                // Design system (palette + spacing)
+global.css              // CSS variabili per dark mode
 ```
 
-### Pages
-- **Dashboard**: `/` - Overview con KPI e grafici
-- **Movimenti**: `/movimenti` - Lista e gestione transazioni
-- **Conti**: `/conti` - Gestione conti bancari
-- **Beni**: `/beni` - Gestione veicoli ed elettrodomestici
-- **Budget**: `/budget` - Monitoraggio budget per categoria
-- **Obiettivi**: `/obiettivi` - Obiettivi di risparmio
-
-### Key Components
+### Dashboard Personalizzabile
 ```typescript
-// Form Components
-MovimentoForm.tsx         // Form con budget_id + obiettivo_id + scomposizione
-ContoForm.tsx
-BeneForm.tsx              // Form dinamico veicolo/elettrodomestico
-BudgetForm.tsx
-ObiettivoForm.tsx
-
-// UI Components
-ConfirmDialog.tsx         // Dialog conferma eliminazione
-ThemeToggle.tsx           // Dark/Light mode switch
+useDashboardLayout.ts       // Hook gestione widget
+DashboardCustomizer.tsx     // Modal personalizzazione
 ```
 
----
-
-## 🔥 Funzionalità Avanzate
-
-### 1. Budget con Logica Prioritaria
-
-Il calcolo della spesa di un budget segue questa logica:
-
-```python
-# PRIORITÀ 1: Movimenti con budget_id esplicito
-SELECT SUM(importo) FROM movimenti 
-WHERE budget_id = ? AND tipo = 'uscita'
-
-# PRIORITÀ 2: Movimenti con categoria (senza budget_id)
-SELECT SUM(importo) FROM movimenti 
-WHERE categoria_id = ? AND budget_id IS NULL AND tipo = 'uscita'
-
-# Totale = Priorità 1 + Priorità 2
-```
-
-**Caso d'uso**: Hai un budget "Emergenze" da 500€. Puoi:
-- Collegare spese di **qualsiasi categoria** a questo budget
-- Le spese con `budget_id` esplicito scalano da quel budget
-- Le spese senza `budget_id` scalano dal budget della categoria
-
-### 2. Obiettivi con Calcolo da Movimenti
-
-**NON si gestiscono più con endpoint dedicati**, ma tramite movimenti:
-
-```json
-// Allocare 100€ a "Vacanza Estiva" (id: 3)
-POST /api/movimenti
-{
-  "tipo": "entrata",
-  "importo": 100.00,
-  "obiettivo_id": 3,
-  "conto_id": 1,
-  "descrizione": "Risparmio mensile per vacanza"
-}
-```
-
-L'endpoint GET `/api/obiettivi` calcola automaticamente:
-```python
-importo_attuale = SUM(importo) WHERE obiettivo_id = 3 AND tipo = 'entrata'
-```
-
-### 3. Scomposizione Automatica Costi
-
-**Veicolo** (esempio: Fiat 500):
-```json
-{
-  "tipo": "veicolo",
-  "veicolo_consumo_medio": 6.5,  // L/100km
-  "veicolo_costo_manutenzione_per_km": 0.06,
-  "prezzo_acquisto": 15000,
-  "durata_anni_stimata": 10
-}
-```
-
-Creando un movimento con `km_percorsi: 200`:
-```
-💵 Totale: 36.80€
-├─ Carburante: 24.05€ (200km × 6.5L/100km × 1.85€/L)
-├─ Manutenzione: 12.00€ (200km × 0.06€/km)
-└─ Ammortamento: 0.75€ (200km × 0.00375€/km)
-```
-
-**Elettrodomestico** (esempio: Lavatrice):
-```json
-{
-  "tipo": "elettrodomestico",
-  "elettrodomestico_potenza": 1600,  // Watt
-  "prezzo_acquisto": 450,
-  "durata_anni_stimata": 8
-}
-```
-
-Creando un movimento con `ore_utilizzo: 10`:
-```
-💵 Totale: 4.56€
-├─ Energia: 4.00€ (10h × 1.6kW × 0.25€/kWh)
-└─ Ammortamento: 0.56€ (10h × 0.056€/h)
-```
-
-### 4. Sistema di Temi (Dark/Light)
-
-**Persistenza**: Il tema selezionato viene salvato in `localStorage`
-
-**Palette colori**:
-```typescript
-// Light Mode
-background: '#f8f9fa'
-surface: '#ffffff'
-text.primary: '#1a1a1a'
-
-// Dark Mode
-background: '#0f172a'
-surface: '#1e293b'
-text.primary: '#f1f5f9'
-
-// Shared
-primary.DEFAULT: '#3b82f6'
-primary.gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-```
-
-**Transizioni**: Tutti i colori hanno `transition: 0.3s ease`
+**Features**:
+- Mostra/nascondi widget con toggle Eye/EyeOff
+- Riordina widget con frecce ⬆️⬇️
+- Reset a layout default
+- Persistenza in `localStorage` (key: `dashboard_layout_v1`)
 
 ---
 
 ## 🐛 Bug Risolti (Feb 2026)
 
+### Database & Backend
 - ✅ `conn.commit()` mancante in Conti/Beni/Budget
 - ✅ Nome colonna `creato_il` → `data_creazione` in Obiettivi
-- ✅ CSS mancante per BudgetForm
-- ✅ Struttura dati API Budget errata
-- ✅ Import errato `dashboard` → `analytics`
-- ✅ Nome file `seed.sql` → `seed_data.sql`
 - ✅ Encoding UTF-8 per Windows (fix UnicodeDecodeError)
 - ✅ Schema già esistente: skip se DB presente
 - ✅ **Obiettivi con valori diversi**: GET `/api/obiettivi` ora calcola da movimenti
+
+### Frontend & UI
+- ✅ CSS mancante per BudgetForm
+- ✅ Struttura dati API Budget errata
+- ✅ Import errato `dashboard` → `analytics`
 - ✅ **Logo cliccabile**: Click logo → torna alla Dashboard
 - ✅ **Tema dark/light**: Switch persistente con localStorage
 - ✅ **Bottom navigation**: Icone Material Design con hover effects
+- ✅ **Dark mode contrasti**: Text primary `#F5F5F5` (era `#E8E8E8`) → +10% luminosità
+- ✅ **ThemeToggle non funzionava**: Fix import da `providers/ThemeProvider`
+- ✅ **Layout/Header import errato**: Ora usano context condiviso
+- ✅ **Testi non leggibili in dark**: Background `#0F0F0F`, text secondary `#C0C0C0`
+
+---
+
+## 📚 Documentazione
+
+Documentazione completa nella cartella `/docs`:
+
+- **[STEP_5_CUSTOMIZABLE_DASHBOARD.md](docs/STEP_5_CUSTOMIZABLE_DASHBOARD.md)**: Guida dashboard personalizzabile
+- **[DARK_MODE_SETUP.md](docs/DARK_MODE_SETUP.md)**: Setup completo tema dark/light
+- **[DARK_MODE_FIX.md](docs/DARK_MODE_FIX.md)**: Fix contrasti e problemi comuni
+- **[FIX_ALL_THEME_IMPORTS.md](docs/FIX_ALL_THEME_IMPORTS.md)**: Come fixare import useTheme
+- **[DASHBOARD_INTEGRATION_EXAMPLE.md](docs/DASHBOARD_INTEGRATION_EXAMPLE.md)**: Esempi integrazione
 
 ---
 
@@ -503,6 +444,7 @@ primary.gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
 - [ ] Notifiche budget superati
 - [ ] Grafici trend mensili
 - [ ] Gestione automatica movimenti ricorrenti
+- [ ] Drag & Drop riordino widget dashboard
 
 ### Future Features
 - [ ] Multi-utente con autenticazione
