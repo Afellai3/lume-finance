@@ -7,6 +7,7 @@ import { theme } from '../styles/theme';
 import ContoForm from '../components/ContoForm';
 import TrasferimentoForm from '../components/conti/TrasferimentoForm';
 import SaldoStoricoChart from '../components/conti/SaldoStoricoChart';
+import { api } from '../config/api';
 
 interface Conto {
   id: number;
@@ -42,11 +43,8 @@ function Conti() {
   const fetchConti = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/conti');
-      if (response.ok) {
-        const data = await response.json();
-        setConti(data);
-      }
+      const data = await api.get('/api/conti');
+      setConti(data);
     } catch (error) {
       console.error('Errore:', error);
     } finally {
@@ -56,11 +54,8 @@ function Conti() {
 
   const fetchMovimentiConto = async (contoId: number) => {
     try {
-      const response = await fetch(`/api/conti/${contoId}/movimenti?per_page=5`);
-      if (response.ok) {
-        const data = await response.json();
-        setMovimentiPerConto(prev => ({ ...prev, [contoId]: data.items || [] }));
-      }
+      const data = await api.get(`/api/conti/${contoId}/movimenti?per_page=5`);
+      setMovimentiPerConto(prev => ({ ...prev, [contoId]: data.items || [] }));
     } catch (error) {
       console.error('Errore caricamento movimenti:', error);
     }
@@ -110,8 +105,8 @@ function Conti() {
     e.stopPropagation();
     if (!confirm('Eliminare questo conto?')) return;
     try {
-      const response = await fetch(`/api/conti/${id}`, { method: 'DELETE' });
-      if (response.ok) fetchConti();
+      await api.delete(`/api/conti/${id}`);
+      fetchConti();
     } catch (error) {
       alert('Errore durante l\'eliminazione');
     }
