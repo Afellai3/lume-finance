@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
 import { Header } from './Header';
 import { BottomNav, Page } from './BottomNav';
-import { useTheme } from '../../hooks/useTheme';
+import { useTheme } from '../../providers/ThemeProvider';
 
 interface LayoutProps {
   children: ReactNode;
