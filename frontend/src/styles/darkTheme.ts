@@ -37,6 +37,10 @@ export const darkTheme = {
     uscita: '#F87171'
   },
 
+  layout: {
+    maxWidth: '1200px'
+  },
+
   shadows: {
     sm: '0 1px 3px rgba(0, 0, 0, 0.5)',
     md: '0 4px 8px rgba(0, 0, 0, 0.6)',
