@@ -18,14 +18,14 @@
 }
 
 [data-theme='dark'] {
-  /* Dark mode colors */
-  --color-background: #121212;
-  --color-surface: #1E1E1E;
-  --color-text-primary: #E8E8E8;
-  --color-text-secondary: #B0B0B0;
-  --color-text-muted: #757575;
-  --color-border-light: #2C2C2C;
-  --color-border: #3C3C3C;
+  /* Dark mode colors - High contrast */
+  --color-background: #0F0F0F;
+  --color-surface: #1A1A1A;
+  --color-text-primary: #F5F5F5;
+  --color-text-secondary: #C0C0C0;
+  --color-text-muted: #909090;
+  --color-border-light: #2A2A2A;
+  --color-border: #404040;
   --color-primary: #5BA3FF;
   --color-success: #66BB6A;
   --color-danger: #EF5350;
@@ -60,16 +60,16 @@ body {
 }
 
 [data-theme='dark'] ::-webkit-scrollbar-track {
-  background: #1E1E1E;
+  background: #1A1A1A;
 }
 
 [data-theme='dark'] ::-webkit-scrollbar-thumb {
-  background: #3C3C3C;
+  background: #404040;
   border-radius: 4px;
 }
 
 [data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
-  background: #4C4C4C;
+  background: #555555;
 }
 
 /* Selection colors */
@@ -80,5 +80,5 @@ body {
 
 [data-theme='dark'] ::selection {
   background-color: var(--color-primary);
-  color: #121212;
+  color: #0F0F0F;
 }
