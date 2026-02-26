@@ -29,26 +29,11 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
     margin: '0 auto'
   };
 
-  const logoContainerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: theme.spacing.sm
-  };
-
   const logoImageStyles: React.CSSProperties = {
     height: '40px',
     width: 'auto',
     objectFit: 'contain',
     borderRadius: theme.borderRadius.md
-  };
-
-  const logoTextStyles: React.CSSProperties = {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
-    background: theme.colors.primary.gradient,
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text'
   };
 
   const actionsStyles: React.CSSProperties = {
@@ -88,15 +73,12 @@ export const Header: React.FC<HeaderProps> = ({ pageTitle, pageSubtitle }) => {
   return (
     <header style={headerStyles}>
       <div style={containerStyles}>
-        {/* Logo */}
-        <div style={logoContainerStyles}>
-          <img 
-            src="/logo.jpg" 
-            alt="Lume Finance Logo" 
-            style={logoImageStyles}
-          />
-          <span style={logoTextStyles}>Lume Finance</span>
-        </div>
+        {/* Logo - Only Image */}
+        <img 
+          src="/logo.jpg" 
+          alt="Lume Finance Logo" 
+          style={logoImageStyles}
+        />
         
         {/* Actions */}
         <div style={actionsStyles}>
