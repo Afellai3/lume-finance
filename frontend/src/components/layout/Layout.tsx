@@ -1,9 +1,8 @@
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { ReactNode } from 'react';
 import { Header } from './Header';
 import { BottomNav, Page } from './BottomNav';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Capacitor } from '@capacitor/core';
-import { SafeArea } from '@capacitor/status-bar';
 
 interface LayoutProps {
   children: ReactNode;
@@ -21,31 +20,15 @@ export const Layout: React.FC<LayoutProps> = ({
   pageSubtitle
 }) => {
   const { theme } = useTheme();
-  const [safeAreaInsets, setSafeAreaInsets] = useState({ top: 0, bottom: 0 });
 
-  useEffect(() => {
-    // Get safe area insets on mobile
-    if (Capacitor.isNativePlatform()) {
-      // For Android/iOS, use safe area insets
-      SafeArea.getSafeAreaInsets().then((insets) => {
-        console.log('📱 Safe Area Insets:', insets);
-        setSafeAreaInsets({
-          top: insets.insets.top,
-          bottom: insets.insets.bottom
-        });
-      }).catch(() => {
-        // Fallback values if SafeArea plugin fails
-        console.log('⚠️ SafeArea plugin not available, using fallback');
-        setSafeAreaInsets({ top: 40, bottom: 20 });
-      });
-    }
-  }, []);
-
+  // Use CSS env() for safe areas - works automatically on iOS/Android
   const mainStyles: React.CSSProperties = {
     minHeight: '100vh',
     backgroundColor: theme.colors.background,
-    paddingTop: Capacitor.isNativePlatform() ? `${safeAreaInsets.top}px` : '0',
-    paddingBottom: Capacitor.isNativePlatform() ? `${80 + safeAreaInsets.bottom}px` : '80px',
+    // Safe area top: notch + status bar
+    paddingTop: 'max(env(safe-area-inset-top), 0px)',
+    // Safe area bottom: home indicator + bottom nav (80px)
+    paddingBottom: 'calc(80px + env(safe-area-inset-bottom))',
     transition: 'background-color 0.3s ease'
   };
 
@@ -53,10 +36,6 @@ export const Layout: React.FC<LayoutProps> = ({
     maxWidth: theme.layout.maxWidth,
     margin: '0 auto',
     padding: theme.spacing.lg
-  };
-
-  const bottomNavStyles: React.CSSProperties = {
-    paddingBottom: Capacitor.isNativePlatform() ? `${safeAreaInsets.bottom}px` : '0'
   };
 
   return (
@@ -69,9 +48,7 @@ export const Layout: React.FC<LayoutProps> = ({
       <main style={contentStyles}>
         {children}
       </main>
-      <div style={bottomNavStyles}>
-        <BottomNav currentPage={currentPage} onPageChange={onPageChange} />
-      </div>
+      <BottomNav currentPage={currentPage} onPageChange={onPageChange} />
     </div>
   );
 };
