@@ -68,36 +68,37 @@ const DEFAULT_CONFIRM_STATE: ConfirmDialogState = {
  * ```
  */
 export const useFeedback = (): UseFeedbackReturn => {
-  const { addToast } = useToast();
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(DEFAULT_CONFIRM_STATE);
 
+  // FIX: Use correct toast API methods
   const showSuccess = useCallback(
     (message: string) => {
-      addToast({ message, type: 'success' });
+      toast.success(message);
     },
-    [addToast]
+    [toast]
   );
 
   const showError = useCallback(
     (message: string) => {
-      addToast({ message, type: 'error' });
+      toast.error(message);
     },
-    [addToast]
+    [toast]
   );
 
   const showWarning = useCallback(
     (message: string) => {
-      addToast({ message, type: 'warning' });
+      toast.warning(message);
     },
-    [addToast]
+    [toast]
   );
 
   const showInfo = useCallback(
     (message: string) => {
-      addToast({ message, type: 'info' });
+      toast.info(message);
     },
-    [addToast]
+    [toast]
   );
 
   const setLoading = useCallback((loading: boolean) => {
@@ -116,13 +117,13 @@ export const useFeedback = (): UseFeedbackReturn => {
         return result;
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Errore sconosciuto';
-        showError(message);
+        toast.error(message);
         throw error;
       } finally {
         setIsLoading(false);
       }
     },
-    [showError]
+    [toast]
   );
 
   const showConfirm = useCallback((config: ConfirmDialogConfig) => {
@@ -145,10 +146,10 @@ export const useFeedback = (): UseFeedbackReturn => {
       hideConfirm();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Errore durante l\'operazione';
-      showError(message);
+      toast.error(message);
       setConfirmDialog(prev => ({ ...prev, loading: false }));
     }
-  }, [confirmDialog.onConfirm, hideConfirm, showError]);
+  }, [confirmDialog.onConfirm, hideConfirm, toast]);
 
   const handleCancel = useCallback(() => {
     if (confirmDialog.onCancel) {
