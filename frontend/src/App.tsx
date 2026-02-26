@@ -8,6 +8,8 @@ import Budget from './pages/Budget'
 import Obiettivi from './pages/Obiettivi'
 import Ricorrenze from './pages/Ricorrenze'
 import Categorie from './pages/Categorie'
+import { ToastProvider } from './providers/ToastProvider'
+import { ConfirmProvider } from './providers/ConfirmProvider'
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard')
@@ -71,17 +73,21 @@ function App() {
   }
 
   return (
-    <Layout
-      currentPage={currentPage}
-      onPageChange={setCurrentPage}
-      pageTitle={pageConfig[currentPage].title}
-      pageSubtitle={pageConfig[currentPage].subtitle}
-    >
-      {/* Force remount on page change to trigger useEffect and refresh data */}
-      <div key={currentPage}>
-        {renderPage()}
-      </div>
-    </Layout>
+    <ToastProvider>
+      <ConfirmProvider>
+        <Layout
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+          pageTitle={pageConfig[currentPage].title}
+          pageSubtitle={pageConfig[currentPage].subtitle}
+        >
+          {/* Force remount on page change to trigger useEffect and refresh data */}
+          <div key={currentPage}>
+            {renderPage()}
+          </div>
+        </Layout>
+      </ConfirmProvider>
+    </ToastProvider>
   )
 }
 
