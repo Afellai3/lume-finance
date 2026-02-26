@@ -10,6 +10,7 @@ export const theme = {
       DEFAULT: '#4A90E2',
       dark: '#2D5F8D',
       light: '#7AB8FF',
+      hover: '#3A7BC8',
       gradient: 'linear-gradient(135deg, #4A90E2 0%, #2D5F8D 100%)',
     },
 
@@ -33,8 +34,13 @@ export const theme = {
       primary: '#212121',
       secondary: '#757575',
       muted: '#BDBDBD',
+      disabled: '#9E9E9E',
       white: '#FFFFFF',
     },
+
+    // Financial specific
+    entrata: '#4CAF50',
+    uscita: '#FF6B6B',
 
     // Category Colors (for charts and icons)
     categories: {
@@ -48,6 +54,11 @@ export const theme = {
       istruzione: '#9575CD',
       altro: '#A1887F',
     },
+  },
+
+  // Layout
+  layout: {
+    maxWidth: '1200px',
   },
 
   // Spacing scale (based on 8px)
