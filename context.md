@@ -1,6 +1,6 @@
 # 📋 Lume Finance - Context per AI Assistant
 
-> Questo file fornisce contesto completo per assistenti AI (Claude, GPT, ecc.) che lavorano sul progetto.
+> Questo file fornisce contesto completo per assistenti AI (Claude, GPT, Perplexity, ecc.) che lavorano sul progetto.
 
 ---
 
@@ -8,17 +8,16 @@
 
 **Nome**: Lume Finance  
 **Repository**: https://github.com/Afellai3/lume-finance  
-**Tipo**: Applicazione web full-stack per gestione finanze personali  
+**Tipo**: Applicazione web full-stack + **app mobile Android nativa**  
 **Stato**: ✅ Produzione (sviluppo attivo)  
-**Data Ultima Modifica**: 26 Febbraio 2026  
+**Data Ultima Modifica**: 03 Marzo 2026  
+**Versione Context**: 2.0
 
 ---
 
 ## 🎯 Obiettivo Principale
 
-Creare un sistema di gestione finanze personali che **va oltre le app tradizionali** analizzando i **costi nascosti** di veicoli ed elettrodomestici (carburante, manutenzione, ammortamento, energia).
-
-**Differenziatore chiave**: La funzionalità di **scomposizione automatica dei costi** non è presente in Money Manager, Wallet, o altri competitor.
+Creare un sistema di gestione finanze personali che **va oltre le app tradizionali** analizzando i **costi nascosti** di veicoli ed elettrodomestici (carburante, manutenzione, ammortamento, energia). Disponibile sia come web app che come **app Android nativa** tramite Capacitor.
 
 ---
 
@@ -26,27 +25,28 @@ Creare un sistema di gestione finanze personali che **va oltre le app tradiziona
 
 ### Backend
 - **Framework**: FastAPI 0.104+ (Python 3.11+)
-- **Database**: SQLite 3 (file-based, senza server)
-- **ORM**: None (SQL puro per semplicità)
-- **CORS**: Abilitato per localhost:3000
-- **Porta**: 8000
+- **Database**: SQLite 3 (file-based)
+- **ORM**: None (SQL puro)
+- **CORS**: Configurato per web + Capacitor mobile
+- **Host**: `0.0.0.0:8000` (obbligatorio per raggiungibilità da telefono)
+- **Avvio**: `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload`
 
 ### Frontend
 - **Framework**: React 18.3 + TypeScript 5.5
-- **Build Tool**: Vite
+- **Build Tool**: Vite (build: `vite build`, NO `tsc &&`)
+- **Mobile**: **Capacitor 6** (Android nativo)
 - **Routing**: Stato interno (no react-router)
 - **Charts**: Chart.js
 - **Icons**: Lucide React
-- **Styling**: CSS puro + Inline styles (no Tailwind/CSS-in-JS)
+- **Styling**: CSS puro + Inline styles (no Tailwind)
 - **Theme**: Dark/Light mode con localStorage
-- **Porta**: 3000 (dev)
+- **API Client**: `src/config/api.ts` centralizzato
 
 ### Database
 - **Tipo**: SQLite
 - **Path**: `data/lume.db`
 - **Inizializzazione**: Automatica al primo avvio backend
 - **Migrations**: Incrementali in `database/migrations/`
-- **Seed Data**: `database/seed_data.sql` (dati demo)
 
 ---
 
@@ -55,56 +55,183 @@ Creare un sistema di gestione finanze personali che **va oltre le app tradiziona
 ```
 lume-finance/
 ├── backend/
-│   ├── routes/              # Endpoints API
-│   │   ├── analytics.py    # Dashboard KPI e grafici
-│   │   ├── movimenti.py    # CRUD + scomposizione costi
+│   ├── routes/
+│   │   ├── analytics.py    # Dashboard KPI, trend, comparison, top-spese
+│   │   ├── movimenti.py    # CRUD + scomposizione costi + export CSV
 │   │   ├── conti.py        # Gestione conti bancari
 │   │   ├── budget.py       # Budget con logica prioritaria
-│   │   ├── obiettivi.py    # Obiettivi risparmio
-│   │   └── beni.py         # Veicoli/elettrodomestici
-│   ├── database.py         # SQLite init + migrations
+│   │   ├── obiettivi.py    # Obiettivi risparmio (calcolo da movimenti)
+│   │   ├── beni.py         # Veicoli/elettrodomestici
+│   │   ├── categorie.py    # ⭐ Categorie custom CRUD
+│   │   └── ricorrenze.py   # ⭐ Movimenti ricorrenti automatici
+│   ├── database.py         # SQLite init + migrations auto
 │   └── main.py             # FastAPI app + CORS
 │
 ├── frontend/
 │   ├── src/
+│   │   ├── main.tsx              # ⭐ Entry point + global fetch patch
+│   │   ├── config/
+│   │   │   └── api.ts            # ⭐ Client API centralizzato (timeout+retry)
 │   │   ├── components/
-│   │   │   ├── layout/     # Header, BottomNav, Layout
-│   │   │   ├── ui/         # ThemeToggle, ConfirmDialog
-│   │   │   └── forms/      # Form components
-│   │   ├── pages/          # Dashboard, Movimenti, Conti, ecc.
-│   │   ├── hooks/          # useTheme, useApi
-│   │   ├── theme/          # Design system (dark/light)
-│   │   └── App.tsx         # Root component
-│   └── public/
-│       └── logo.jpg        # Logo aziendale (40px height)
+│   │   │   ├── layout/           # Header, BottomNav, Layout
+│   │   │   ├── ui/               # Button, Card, Input, Badge, Tabs, ecc.
+│   │   │   ├── ricorrenze/       # RicorrenzeForm
+│   │   │   └── DashboardCustomizer.tsx
+│   │   ├── pages/
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── MovimentiWithTabs.tsx  # Tabs: Movimenti | Ricorrenze | Categorie
+│   │   │   ├── Movimenti.tsx
+│   │   │   ├── Ricorrenze.tsx
+│   │   │   ├── Categorie.tsx
+│   │   │   ├── Patrimonio.tsx         # Tabs: Conti | Beni
+│   │   │   ├── Conti.tsx
+│   │   │   ├── Beni.tsx
+│   │   │   ├── Finanza.tsx            # Tabs: Budget | Obiettivi
+│   │   │   ├── Budget.tsx
+│   │   │   ├── Obiettivi.tsx
+│   │   │   └── Impostazioni.tsx
+│   │   ├── hooks/
+│   │   │   ├── useDashboardLayout.ts
+│   │   │   └── useApi.ts
+│   │   ├── providers/
+│   │   │   ├── ThemeProvider.tsx      # ⚠️ SEMPRE importare useTheme da qui
+│   │   │   ├── ToastProvider.tsx
+│   │   │   └── ConfirmProvider.tsx
+│   │   └── styles/
+│   │       ├── theme.ts              # Design system dark/light
+│   │       └── global.css
+│   ├── android/                      # ⭐ Progetto Android (Capacitor)
+│   ├── capacitor.config.ts           # Config Capacitor
+│   ├── .env                          # VITE_API_URL=http://<IP_PC>:8000
+│   └── package.json
 │
 ├── database/
-│   ├── schema.sql          # Schema completo
-│   ├── seed_data.sql       # Dati di esempio
-│   └── migrations/         # SQL migrations incrementali
+│   ├── schema.sql
+│   ├── seed_data.sql
+│   └── migrations/
 │       ├── 001_add_icona_colore_categorie.sql
 │       ├── 002_add_obiettivi_table.sql
 │       ├── 003_add_scomposizione_columns.sql
-│       └── 004_add_budget_id_to_movimenti.sql
+│       ├── 003_enhance_beni_table.sql
+│       ├── 004_add_budget_id_to_movimenti.sql
+│       ├── 004_enhance_budget_obiettivi.sql
+│       ├── 005_add_ricorrenze.sql
+│       └── 006_add_categorie_custom.sql
 │
 ├── data/
-│   └── lume.db            # Database SQLite (generato)
+│   └── lume.db             # Database SQLite
 │
-├── README.md              # Documentazione utente
-├── context.md             # Questo file (context per AI)
-├── requirements.txt       # Python dependencies
-└── start.bat              # Avvio rapido Windows
+├── README.md
+├── CONTEXT.md              # Context sviluppo (markdown formale)
+├── context.md              # Questo file (prompt per AI)
+├── requirements.txt
+├── start.bat / start.py / start.sh
+└── INSTALL_WINDOWS.md
 ```
+
+---
+
+## 📱 Mobile App Android (Capacitor)
+
+### Setup iniziale (già fatto nel repo)
+```bash
+cd frontend
+npm install @capacitor/core @capacitor/cli @capacitor/android
+npx cap add android
+```
+
+### Build e deploy (flusso standard)
+```bash
+cd frontend
+# 1. Aggiorna IP nel .env se cambiato
+echo VITE_API_URL=http://10.0.0.105:8000 > .env
+
+# 2. Build (SENZA tsc pre-check)
+npm run build
+
+# 3. Sync con Android
+npx cap sync
+
+# 4. Apri Android Studio -> Build APK
+npx cap open android
+```
+
+### Note critiche mobile
+- `package.json` build script: `"build": "vite build"` (NO `tsc &&`)
+- `@capacitor/status-bar` NON installato → non importarlo mai in Layout.tsx
+- Backend DEVE usare `--host 0.0.0.0` (non 127.0.0.1)
+- Telefono e PC sulla stessa rete WiFi
+- IP può cambiare → aggiornare `.env` e fare rebuild + sync
+
+### CORS Backend (main.py)
+```python
+allow_origins=[
+    "http://localhost:3000",
+    "http://localhost",           # ⭐ WebView Capacitor Android
+    "capacitor://localhost",      # ⭐ Capacitor iOS
+    "ionic://localhost",
+]
+```
+
+---
+
+## ⭐ Global Fetch Patch (main.tsx)
+
+**Problema**: Molte pagine usano `fetch('/api/...')` diretto. Su Capacitor, le URL relative
+risolvono a `capacitor://localhost/api/...` → ricevono `index.html` → errore JSON.
+
+**Soluzione**: Patch globale in `main.tsx` PRIMA del render React:
+
+```typescript
+import { Capacitor } from '@capacitor/core';
+
+if (Capacitor.isNativePlatform()) {
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+  if (API_BASE) {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = function(input, init) {
+      if (typeof input === 'string' && input.startsWith('/api/')) {
+        input = `${API_BASE}${input}`;
+      }
+      return originalFetch(input, init);
+    };
+  }
+}
+```
+
+Questo fix è **trasparente**: tutte le pagine continuano a usare `fetch('/api/...')` normalmente.
+
+---
+
+## ⭐ API Client Centralizzato (api.ts)
+
+```typescript
+// frontend/src/config/api.ts
+const API_BASE = Capacitor.isNativePlatform()
+  ? (import.meta.env.VITE_API_URL || '')
+  : '';
+
+export const api = {
+  async get(endpoint: string) { ... },
+  async post(endpoint: string, data?: any) { ... },
+  async put(endpoint: string, data?: any) { ... },
+  async delete(endpoint: string) { ... },
+};
+```
+
+**Features**:
+- `fetchWithTimeout`: abort dopo 30s
+- `fetchWithRetry`: 2 retry con 1s wait
+- Throttle alert: max 1 popup ogni 5s
+- Log `📡 API GET`, `✅ success`, `❌ failed` nella console
+
+**Usato da**: Dashboard, Movimenti, Analytics, Obiettivi e altri
 
 ---
 
 ## 🗄️ Schema Database
 
-### Tabelle Principali
-
-#### `conti`
-Conti bancari/carte/contante dell'utente.
-
+### `conti`
 ```sql
 CREATE TABLE conti (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -117,22 +244,18 @@ CREATE TABLE conti (
 );
 ```
 
-#### `categorie`
-Categorie per entrate/uscite (Stipendio, Alimentari, Trasporti, ecc.).
-
+### `categorie`
 ```sql
 CREATE TABLE categorie (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     tipo TEXT NOT NULL CHECK(tipo IN ('entrata', 'uscita')),
-    icona TEXT,         -- Emoji o nome icona Lucide
-    colore TEXT         -- Hex color per UI
+    icona TEXT,
+    colore TEXT
 );
 ```
 
-#### `movimenti`
-Transazioni finanziarie - **tabella centrale del sistema**.
-
+### `movimenti` ← Tabella Centrale
 ```sql
 CREATE TABLE movimenti (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,36 +264,25 @@ CREATE TABLE movimenti (
     tipo TEXT NOT NULL CHECK(tipo IN ('entrata', 'uscita')),
     categoria_id INTEGER,
     conto_id INTEGER NOT NULL,
-    
-    -- ⭐ NUOVE COLONNE CHIAVE
-    budget_id INTEGER,      -- Collegamento esplicito a budget (priorità)
-    obiettivo_id INTEGER,   -- Allocazione a obiettivo risparmio
-    
+    budget_id INTEGER,      -- ⭐ Priorità esplicita budget
+    obiettivo_id INTEGER,   -- ⭐ Allocazione risparmio
     descrizione TEXT,
+    note TEXT,
     ricorrente BOOLEAN DEFAULT 0,
+    bene_id INTEGER,
+    km_percorsi REAL,
+    ore_utilizzo REAL,
+    scomposizione_json TEXT,
     data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    
-    -- Scomposizione costi nascosti
-    bene_id INTEGER,        -- FK a beni (veicolo/elettrodomestico)
-    km_percorsi REAL,       -- Per veicoli
-    ore_utilizzo REAL,      -- Per elettrodomestici
-    scomposizione_json TEXT, -- JSON con dettaglio costi
-    
     FOREIGN KEY (categoria_id) REFERENCES categorie(id),
     FOREIGN KEY (conto_id) REFERENCES conti(id),
-    FOREIGN KEY (bene_id) REFERENCES beni(id),
     FOREIGN KEY (budget_id) REFERENCES budget(id),
-    FOREIGN KEY (obiettivo_id) REFERENCES obiettivi_risparmio(id)
+    FOREIGN KEY (obiettivo_id) REFERENCES obiettivi_risparmio(id),
+    FOREIGN KEY (bene_id) REFERENCES beni(id)
 );
 ```
 
-**⚠️ NOTA IMPORTANTE**: I campi `budget_id` e `obiettivo_id` sono opzionali ma **cambiano il comportamento**:
-- `budget_id`: Se presente, la spesa scala da quel budget (priorità 1) invece che dal budget della categoria (priorità 2)
-- `obiettivo_id`: Se presente, il movimento in **entrata** contribuisce al saldo dell'obiettivo
-
-#### `budget`
-Budget per categoria con periodi (settimanale/mensile/annuale).
-
+### `budget`
 ```sql
 CREATE TABLE budget (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -178,51 +290,39 @@ CREATE TABLE budget (
     importo REAL NOT NULL,
     periodo TEXT NOT NULL CHECK(periodo IN ('settimanale', 'mensile', 'annuale')),
     data_inizio DATE NOT NULL,
-    attivo BOOLEAN DEFAULT 1,
-    data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (categoria_id) REFERENCES categorie(id)
+    attivo BOOLEAN DEFAULT 1
 );
 ```
 
 **Calcolo Spesa** (logica prioritaria):
 ```python
-# Priorità 1: Movimenti con budget_id esplicito
+# 1. Movimenti con budget_id esplicito
 speso_esplicito = SUM(importo) WHERE budget_id = X AND tipo = 'uscita'
-
-# Priorità 2: Movimenti con categoria (fallback)
+# 2. Movimenti con categoria (fallback)
 speso_categoria = SUM(importo) WHERE categoria_id = Y AND budget_id IS NULL AND tipo = 'uscita'
-
 totale_speso = speso_esplicito + speso_categoria
 ```
 
-#### `obiettivi_risparmio`
-Obiettivi di risparmio con target e deadline.
-
+### `obiettivi_risparmio`
 ```sql
 CREATE TABLE obiettivi_risparmio (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     nome TEXT NOT NULL,
     importo_target REAL NOT NULL,
-    importo_attuale REAL DEFAULT 0,  -- ⚠️ DEPRECATO - Calcolato da movimenti
+    importo_attuale REAL DEFAULT 0,  -- ⚠️ DEPRECATO
     data_target DATE,
     priorita INTEGER DEFAULT 3 CHECK(priorita BETWEEN 1 AND 5),
-    completato BOOLEAN DEFAULT 0,
-    data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    completato BOOLEAN DEFAULT 0
 );
 ```
 
-**⚠️ CAMPO DEPRECATO**: `importo_attuale` non viene più aggiornato. Usa questo calcolo:
-
+**⚠️ IMPORTANTE**: `importo_attuale` è DEPRECATO. Calcola SEMPRE da movimenti:
 ```python
-importo_attuale = SUM(importo) FROM movimenti 
-WHERE obiettivo_id = X AND tipo = 'entrata'
+SELECT COALESCE(SUM(importo), 0)
+FROM movimenti WHERE obiettivo_id = ? AND tipo = 'entrata'
 ```
 
-**Motivo**: Single source of truth - evita inconsistenze tra tabelle.
-
-#### `beni`
-Veicoli ed elettrodomestici per calcolo costi nascosti.
-
+### `beni`
 ```sql
 CREATE TABLE beni (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -230,553 +330,219 @@ CREATE TABLE beni (
     tipo TEXT NOT NULL CHECK(tipo IN ('veicolo', 'elettrodomestico')),
     data_acquisto DATE NOT NULL,
     prezzo_acquisto REAL NOT NULL,
-    durata_anni_stimata INTEGER NOT NULL DEFAULT 10,
-    
-    -- Campi specifici veicoli
-    veicolo_tipo_carburante TEXT CHECK(veicolo_tipo_carburante IN ('Benzina', 'Diesel', 'Elettrico', 'Ibrido', 'GPL')),
-    veicolo_consumo_medio REAL,  -- L/100km o kWh/100km
+    durata_anni_stimata INTEGER DEFAULT 10,
+    veicolo_tipo_carburante TEXT,
+    veicolo_consumo_medio REAL,
     veicolo_costo_manutenzione_per_km REAL DEFAULT 0,
-    
-    -- Campi specifici elettrodomestici
-    elettrodomestico_potenza INTEGER,  -- Watt
+    elettrodomestico_potenza INTEGER,
     elettrodomestico_ore_medie_giorno REAL DEFAULT 0,
-    
-    attivo BOOLEAN DEFAULT 1,
-    data_creazione TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    attivo BOOLEAN DEFAULT 1
 );
+```
+
+### `ricorrenze`
+```sql
+CREATE TABLE ricorrenze (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    descrizione TEXT NOT NULL,
+    importo REAL NOT NULL,
+    tipo TEXT NOT NULL CHECK(tipo IN ('entrata', 'uscita')),
+    frequenza TEXT NOT NULL CHECK(frequenza IN ('giornaliera','settimanale','mensile','annuale')),
+    prossima_data DATE NOT NULL,
+    attivo BOOLEAN DEFAULT 1,
+    conto_id INTEGER,
+    categoria_id INTEGER,
+    note TEXT
+);
+```
+
+---
+
+## 📡 API Endpoints
+
+```http
+# Analytics
+GET /api/analytics/dashboard
+GET /api/analytics/trend?period=1m|3m|6m|1y
+GET /api/analytics/comparison?period=month|quarter|year
+GET /api/analytics/budget-warnings
+GET /api/analytics/top-spese?limit=5&period=month
+
+# Movimenti
+GET/POST         /api/movimenti
+GET/PUT/DELETE   /api/movimenti/{id}
+GET              /api/movimenti/categorie
+GET              /api/movimenti/export  (CSV)
+GET              /api/movimenti?page=1&per_page=20
+
+# Ricorrenze
+GET/POST              /api/ricorrenze
+GET/PUT/DELETE        /api/ricorrenze/{id}
+POST                  /api/ricorrenze/{id}/toggle
+POST                  /api/ricorrenze/{id}/esegui
+
+# Conti
+GET/POST/PUT/DELETE   /api/conti
+
+# Budget
+GET/POST/PUT/DELETE   /api/budget
+GET                   /api/budget/riepilogo/{periodo}
+
+# Obiettivi
+GET/POST/PUT/DELETE   /api/obiettivi
+
+# Beni
+GET/POST/PUT/DELETE   /api/beni
+
+# Categorie (custom)
+GET/POST/PUT/DELETE   /api/categorie
 ```
 
 ---
 
 ## 🔥 Funzionalità Uniche
 
-### 1. Scomposizione Costi Nascosti
-
-**Problema**: Quando usi l'auto, paghi solo la benzina? NO! C'è anche manutenzione e ammortamento.
-
-**Soluzione**: Calcolo automatico di tutti i costi.
-
-#### Esempio: Veicolo (Fiat 500)
-
-**Dati Bene**:
-```json
-{
-  "tipo": "veicolo",
-  "veicolo_consumo_medio": 6.5,  // L/100km
-  "veicolo_costo_manutenzione_per_km": 0.06,
-  "prezzo_acquisto": 15000,
-  "durata_anni_stimata": 10
-}
-```
-
-**Calcolo Movimento** (es. 200 km percorsi):
-
+### 1. Scomposizione Costi Nascosti (Veicoli)
 ```python
-# 1. Carburante
-costo_litro = 1.85  # €/L (parametro sistema)
-litri_consumati = 200 * 6.5 / 100  # 13 L
-costo_carburante = 13 * 1.85  # 24.05€
-
-# 2. Manutenzione
-costo_manutenzione = 200 * 0.06  # 12.00€
-
-# 3. Ammortamento
-km_totali_stimati = 10_anni * 15000_km/anno  # 150000 km
-ammortamento_per_km = 15000 / 150000  # 0.10€/km
-costo_ammortamento = 200 * 0.10  # 20.00€
-
-# TOTALE
-importo_totale = 24.05 + 12.00 + 20.00  # 56.05€
+costo_carburante = km * consumo/100 * prezzo_litro
+costo_manutenzione = km * costo_per_km
+costo_ammortamento = km * (prezzo_acquisto / (anni * km_annui_stimati))
+importo_totale = costo_carburante + costo_manutenzione + costo_ammortamento
 ```
 
-**Salvataggio**:
-```json
-{
-  "importo": 56.05,
-  "bene_id": 1,
-  "km_percorsi": 200,
-  "scomposizione_json": {
-    "carburante": 24.05,
-    "manutenzione": 12.00,
-    "ammortamento": 20.00
-  }
-}
-```
-
-#### Esempio: Elettrodomestico (Lavatrice)
-
-**Dati Bene**:
-```json
-{
-  "tipo": "elettrodomestico",
-  "elettrodomestico_potenza": 1600,  // Watt
-  "prezzo_acquisto": 450,
-  "durata_anni_stimata": 8
-}
-```
-
-**Calcolo Movimento** (es. 10 ore utilizzo):
-
+### 2. Scomposizione Costi Nascosti (Elettrodomestici)
 ```python
-# 1. Energia elettrica
-tariffa_kwh = 0.25  # €/kWh
-potenza_kw = 1.6
-costo_energia = 10 * 1.6 * 0.25  # 4.00€
-
-# 2. Ammortamento
-ore_vita_stimata = 8_anni * 365_giorni * 2_ore/giorno  # 5840 ore
-ammortamento_per_ora = 450 / 5840  # 0.077€/h
-costo_ammortamento = 10 * 0.077  # 0.77€
-
-# TOTALE
-importo_totale = 4.00 + 0.77  # 4.77€
+costo_energia = ore * (potenza_watt/1000) * tariffa_kwh
+costo_ammortamento = ore * (prezzo_acquisto / ore_vita_stimata)
+importo_totale = costo_energia + costo_ammortamento
 ```
 
-### 2. Budget con Logica Prioritaria
+### 3. Budget con Logica Prioritaria
+Campo `budget_id` in movimenti → scala dal budget esplicito invece che dalla categoria.
 
-**Problema**: Vuoi un budget "Emergenze" che accetta spese di categorie diverse.
+### 4. Obiettivi con Calcolo da Movimenti
+`importo_attuale` sempre calcolato `SUM(movimenti.importo)` dove `obiettivo_id = ?`.
 
-**Soluzione**: Campo `budget_id` nei movimenti.
+### 5. Dashboard Personalizzabile
+Hook `useDashboardLayout()`, modal `DashboardCustomizer`, persistenza `localStorage`.
 
-**Esempio**:
-
-```python
-# Scenario:
-# - Budget "Emergenze" (id: 5) = 500€
-# - Budget "Alimentari" (id: 2, categoria: 3) = 300€
-
-# Movimento 1: Spesa alimentari normale
-{
-  "categoria_id": 3,
-  "budget_id": null,  # Scala da budget categoria (300€)
-  "importo": 50
-}
-
-# Movimento 2: Spesa alimentari emergenza
-{
-  "categoria_id": 3,
-  "budget_id": 5,  # Scala da budget emergenze (500€)
-  "importo": 80
-}
-
-# Risultato:
-# Budget Alimentari: 50€ / 300€ (16.7%)
-# Budget Emergenze: 80€ / 500€ (16%)
-```
-
-### 3. Obiettivi con Allocazione da Movimenti
-
-**Problema**: Gli endpoint `/aggiungi` e `/rimuovi` creano inconsistenze nei dati.
-
-**Soluzione**: Usa movimenti in **entrata** con `obiettivo_id`.
-
-**Esempio**:
-
-```python
-# Obiettivo "Vacanza Estate 2026" (id: 3)
-# Target: 2000€
-
-# Allocazione 1: Stipendio Gennaio
-POST /api/movimenti
-{
-  "tipo": "entrata",
-  "importo": 200,
-  "obiettivo_id": 3,
-  "descrizione": "Allocazione vacanza - Gennaio"
-}
-
-# Allocazione 2: Bonus lavoro
-POST /api/movimenti
-{
-  "tipo": "entrata",
-  "importo": 150,
-  "obiettivo_id": 3,
-  "descrizione": "Bonus Q1 per vacanza"
-}
-
-# GET /api/obiettivi/3 ritorna:
-{
-  "id": 3,
-  "nome": "Vacanza Estate 2026",
-  "importo_target": 2000,
-  "importo_attuale": 350,  # Calcolato: 200 + 150
-  "percentuale": 17.5
-}
-```
+### 6. Movimenti Ricorrenti
+Endpoint `/toggle` (attiva/pausa) e `/esegui` (esecuzione manuale con creazione movimento).
 
 ---
 
-## 🎨 Frontend: UI/UX
+## 🎨 UI / Design System
 
-### Design System
-
-**Tema**: Dark/Light mode con localStorage persistence
-
-**Colori**:
-```typescript
-// Light Mode
-background: '#f8f9fa',
-surface: '#ffffff',
-text: { primary: '#1a1a1a', secondary: '#6c757d' }
-
-// Dark Mode
-background: '#0f172a',
-surface: '#1e293b',
-text: { primary: '#f1f5f9', secondary: '#94a3b8' }
-
-// Shared
-primary: {
-  DEFAULT: '#3b82f6',
-  hover: '#2563eb',
-  gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-}
+### Navigazione (App.tsx)
 ```
-
-**Spacing**:
-```typescript
-xs: '0.25rem',  // 4px
-sm: '0.5rem',   // 8px
-md: '1rem',     // 16px
-lg: '1.5rem',   // 24px
-xl: '2rem'      // 32px
+Dashboard → MovimentiWithTabs → Patrimonio → Finanza → Impostazioni
 ```
+Bottom navigation con 5 tab. Solo una pagina attiva alla volta (`activeTab` in App.tsx).
 
-**Typography**:
-```typescript
-fontSize: {
-  xs: '0.75rem',   // 12px
-  sm: '0.875rem',  // 14px
-  base: '1rem',    // 16px
-  lg: '1.125rem',  // 18px
-  xl: '1.25rem',   // 20px
-  '2xl': '1.5rem'  // 24px
-}
+### Theme (providers/ThemeProvider)
+- **⚠️ REGOLA CRITICA**: importare `useTheme` SEMPRE da `providers/ThemeProvider`, MAI da `hooks/useTheme`
+- Light: `background #F8F9FA`, `surface #FFFFFF`, `text.primary #212121`
+- Dark: `background #0F0F0F`, `surface #1A1A1A`, `text.primary #F5F5F5` (contrasto 16.5:1 WCAG AAA)
+- Persistenza: localStorage key `theme_mode`
+
+### Safe Areas (Mobile)
+```css
+padding-top: env(safe-area-inset-top);
+padding-bottom: env(safe-area-inset-bottom);
 ```
-
-### Layout
-
-**Header**:
-- Logo cliccabile (40px height) → torna alla Dashboard
-- ThemeToggle (Sun/Moon icon)
-- UserInfo (avatar + username)
-
-**BottomNav** (mobile-first):
-- 5 tab: Dashboard, Movimenti, Conti, Budget, Obiettivi
-- Icone Lucide React
-- Active state con primary color
-- Sticky bottom con backdrop blur
-
-**Content**:
-- Max width: 1280px
-- Padding: 1.5rem
-- Cards con shadow e border radius
-
----
-
-## 🔧 Convenzioni Sviluppo
-
-### Backend (Python)
-
-**Stile**:
-- Snake_case per variabili/funzioni
-- Type hints (quando possibile)
-- Docstrings per funzioni complesse
-
-**Gestione Errori**:
-```python
-try:
-    # operazione database
-except sqlite3.IntegrityError as e:
-    raise HTTPException(status_code=400, detail=str(e))
-except Exception as e:
-    raise HTTPException(status_code=500, detail=str(e))
-```
-
-**Commit Transactions**:
-```python
-conn = get_db()
-cursor = conn.cursor()
-try:
-    cursor.execute(...)
-    conn.commit()  # ⚠️ NON DIMENTICARE!
-    return {...}
-except Exception as e:
-    conn.rollback()
-    raise
-```
-
-### Frontend (TypeScript)
-
-**Stile**:
-- CamelCase per variabili/funzioni
-- PascalCase per componenti
-- Interfaces per props
-
-**Componenti**:
-```typescript
-interface MyComponentProps {
-  title: string;
-  onSave?: () => void;
-}
-
-export const MyComponent: React.FC<MyComponentProps> = ({ title, onSave }) => {
-  // ...
-};
-```
-
-**Hooks**:
-```typescript
-const [state, setState] = useState<Type>(initialValue);
-
-useEffect(() => {
-  // effect
-  return () => { /* cleanup */ };
-}, [dependencies]);
-```
-
-### Commit Messages
-
-**Formato**: `<type>: <subject>`
-
-**Types**:
-- `feat`: Nuova funzionalità
-- `fix`: Bug fix
-- `docs`: Documentazione
-- `refactor`: Refactoring codice
-- `style`: Formattazione (CSS/UI)
-- `test`: Test
-- `chore`: Build/config
-
-**Esempi**:
-```
-feat: Add dark/light theme toggle
-fix: Budget calculation includes explicit budget_id
-docs: Update README with theme system
-refactor: Extract budget logic to separate function
-style: Improve mobile responsive layout
-```
+NON usare `@capacitor/status-bar` (non installato).
 
 ---
 
 ## ⚠️ Problemi Noti & Workaround
 
 ### 1. Windows Encoding Error
-
-**Problema**: `UnicodeDecodeError` all'avvio backend su Windows.
-
-**Causa**: Windows usa `cp1252` invece di UTF-8 per leggere file SQL.
-
-**Fix**:
 ```python
 # In database.py
-with open(sql_file, 'r', encoding='utf-8') as f:  # ⭐ Aggiungi encoding!
+with open(sql_file, 'r', encoding='utf-8') as f:
     sql_script = f.read()
 ```
 
-### 2. Obiettivi: Campo `importo_attuale` Deprecato
-
-**Problema**: `importo_attuale` in `obiettivi_risparmio` diventa obsoleto.
-
-**Causa**: Dati duplicati tra `obiettivi_risparmio` e `movimenti`.
-
-**Fix**: Calcola sempre da movimenti:
-```python
-cursor.execute("""
-    SELECT COALESCE(SUM(importo), 0) 
-    FROM movimenti 
-    WHERE obiettivo_id = ? AND tipo = 'entrata'
-""", (obiettivo_id,))
-importo_attuale = cursor.fetchone()[0]
-```
-
-### 3. CORS in Produzione
-
-**Problema**: Frontend in produzione su dominio diverso dal backend.
-
-**Soluzione Temporanea**: CORS aperto per development
-```python
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # ⚠️ Cambiare in produzione!
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-```
-
-**TODO**: Configurare origins specifici per produzione.
-
----
-
-## 🚀 Deployment
-
-### Requisiti Produzione
-
-- Python 3.11+
-- Node.js 18+
-- Nginx (reverse proxy)
-- Supervisor/systemd (process management)
-- HTTPS (Let's Encrypt)
-
-### Build Frontend
-
+### 2. Backend non raggiungibile da telefono
 ```bash
-cd frontend
-npm run build  # Genera dist/
+# SBAGLIATO (solo localhost)
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
+# CORRETTO (tutta la rete)
+uvicorn backend.main:app --host 0.0.0.0 --port 8000
 ```
 
-**Output**: Cartella `dist/` con HTML/CSS/JS statici.
+### 3. ERR_CONNECTION_TIMED_OUT al primo avvio mobile
+**Causa**: Android WebView ha ~6 connessioni simultanee. Dashboard lancia 8+ richieste.  
+**Comportamento**: Timeout → 2 retry automatici → successo al secondo tentativo.  
+**Non è un bug**: i dati caricano correttamente dopo i retry.
 
-### Run Backend (Production)
+### 4. SyntaxError JSON su fetch('/api/...')
+**Causa**: `fetch('/api/...')` su Capacitor risolve a `capacitor://localhost/api/...` → riceve HTML.  
+**Fix**: Global fetch patch in `main.tsx` (già applicato).
 
-```bash
-pip install gunicorn
-gunicorn backend.main:app --workers 4 --bind 0.0.0.0:8000
-```
+### 5. Build fallisce con errori TypeScript
+**Causa**: script `build` con `tsc && vite build`.  
+**Fix**: `package.json` → `"build": "vite build"` (senza tsc pre-check).
 
-### Nginx Config (Esempio)
-
-```nginx
-server {
-    listen 80;
-    server_name lume-finance.example.com;
-
-    # Frontend (static files)
-    location / {
-        root /var/www/lume-finance/frontend/dist;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Backend API
-    location /api/ {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
----
-
-## 🧪 Testing
-
-### Manual Testing Checklist
-
-**Dashboard**:
-- [ ] KPI cards mostrano valori corretti
-- [ ] Grafico categorie funziona
-- [ ] Movimenti recenti visibili
-- [ ] Theme toggle funziona
-
-**Movimenti**:
-- [ ] Lista movimenti caricata
-- [ ] Filtri per tipo/categoria
-- [ ] Crea movimento semplice
-- [ ] Crea movimento con scomposizione (veicolo)
-- [ ] Crea movimento con obiettivo_id
-- [ ] Modifica movimento
-- [ ] Elimina movimento (conferma dialog)
-
-**Budget**:
-- [ ] Lista budget con progress bar
-- [ ] Colori corretti (verde/giallo/rosso)
-- [ ] Crea budget
-- [ ] Calcolo speso include budget_id espliciti
-
-**Obiettivi**:
-- [ ] Lista obiettivi con calcolo da movimenti
-- [ ] Badge priorità corretti
-- [ ] Progress bar funziona
-- [ ] Auto-completamento al 100%
-
-**Conti**:
-- [ ] Lista conti
-- [ ] Saldo calcolato da movimenti
-- [ ] Crea/modifica/elimina conto
-
-**Beni**:
-- [ ] Lista beni (veicoli + elettrodomestici)
-- [ ] Form dinamico (campi specifici per tipo)
-- [ ] Calcolo ammortamento corretto
-
----
-
-## 📚 Risorse Utili
-
-### Documentazione
-- **FastAPI**: https://fastapi.tiangolo.com/
-- **React**: https://react.dev/
-- **TypeScript**: https://www.typescriptlang.org/docs/
-- **Chart.js**: https://www.chartjs.org/docs/
-- **Lucide Icons**: https://lucide.dev/icons/
-
-### API Testing
-- **Swagger UI**: http://localhost:8000/docs (auto-generato da FastAPI)
-- **Redoc**: http://localhost:8000/redoc
-
----
-
-## 🎯 Prossimi Step
-
-### High Priority
-1. **Autenticazione**: Login/registro utenti
-2. **Export Report**: PDF/Excel con grafici
-3. **Notifiche**: Budget superati, scadenze obiettivi
-4. **PWA**: Installabile come app mobile
-
-### Medium Priority
-5. **Grafici Trend**: Andamento spese mensili
-6. **Movimenti Ricorrenti**: Automazione entrate/uscite fisse
-7. **Multi-valuta**: Conversione automatica
-8. **Backup Cloud**: Sync database su cloud storage
-
-### Low Priority
-9. **Integrazione Bancaria**: API PSD2 per import movimenti
-10. **Machine Learning**: Previsioni spesa basate su storico
-11. **Tag Personalizzati**: Oltre le categorie predefinite
-12. **Mobile App**: React Native per iOS/Android
+### 6. @capacitor/status-bar non trovato
+**Fix**: Rimuovere import da `Layout.tsx`. Usare CSS `env()` per safe areas.
 
 ---
 
 ## 💬 Note per AI Assistant
 
-### Quando modifichi codice:
+### Backend
+- Sempre `conn.commit()` dopo INSERT/UPDATE/DELETE
+- `encoding='utf-8'` per tutti i file SQL
+- Gestire errori con `HTTPException`
+- Backend DEVE girare su `--host 0.0.0.0`
 
-1. **Backend**:
-   - Sempre `conn.commit()` dopo INSERT/UPDATE/DELETE
-   - Usa `encoding='utf-8'` per file SQL
-   - Gestisci errori con HTTPException
+### Frontend
+- Build: `"build": "vite build"` (NO `tsc &&`)
+- `useTheme` SEMPRE da `providers/ThemeProvider`
+- Per chiamate API usare `api.ts` oppure `fetch('/api/...')` (coperto dalla global patch)
+- Per safe areas mobile: CSS `env(safe-area-inset-*)`, NON `@capacitor/status-bar`
+- NON aggiungere `@capacitor/status-bar` (non installato)
+- NON modificare `importo_attuale` in `obiettivi_risparmio` (deprecato)
 
-2. **Frontend**:
-   - Mantieni consistenza con design system
-   - Usa `useTheme()` per accedere al tema
-   - Componenti devono essere responsive (mobile-first)
+### Capacitor / Mobile
+- Dopo ogni modifica frontend: `npm run build` → `npx cap sync` → build da Android Studio
+- Il file `.env` contiene l'IP del PC sulla rete WiFi (può cambiare)
+- Telefono e PC devono essere sulla stessa rete WiFi
 
-3. **Database**:
-   - NON modificare direttamente `importo_attuale` in obiettivi
-   - Calcola sempre da movimenti
-   - Migrations incrementali in `database/migrations/`
-
-4. **Commit**:
-   - Usa conventional commits
-   - Emoji nel messaggio per chiarezza
-   - Riferisci issue/PR se esistenti
-
-### Domande Frequenti:
-
-**Q**: Come aggiungere una nuova categoria?  
-**A**: INSERT in `categorie`, poi sarà disponibile nei dropdown.
-
-**Q**: Come calcolare il saldo di un conto?  
-**A**: `SELECT SUM(CASE WHEN tipo='entrata' THEN importo ELSE -importo END) FROM movimenti WHERE conto_id = ?`
-
-**Q**: Come testare scomposizione costi?  
-**A**: Crea un bene veicolo/elettrodomestico, poi crea movimento con `bene_id` + `km_percorsi`/`ore_utilizzo`.
-
-**Q**: Perché `importo_attuale` non viene aggiornato?  
-**A**: È deprecato. Usa il calcolo da movimenti per evitare inconsistenze.
+### Commit Messages
+```
+feat: Add nuova funzionalità
+fix: Risolve bug specifico
+docs: Aggiorna documentazione
+refactor: Ristruttura codice
+style: Migliora CSS/UI
+chore: Build/config
+```
 
 ---
 
-**Ultima Modifica**: 26 Febbraio 2026, 09:15 CET  
-**Versione Context**: 1.0  
+## 📝 Prossimi Step
+
+### High Priority
+- [ ] Drag & Drop riordino widget dashboard
+- [ ] Export PDF/Excel report con grafici
+- [ ] Notifiche push budget superati
+
+### Medium Priority
+- [ ] Multi-utente con autenticazione
+- [ ] Cloud sync e backup automatico
+- [ ] iOS build (Capacitor - già pronto lato codice)
+- [ ] PWA installabile
+
+### Low Priority
+- [ ] API bancarie PSD2
+- [ ] ML previsioni spesa
+- [ ] Tag personalizzati
+- [ ] Dark mode auto-switch per orario
+
+---
+
+**Ultima Modifica**: 03 Marzo 2026  
+**Versione Context**: 2.0  
 **Autore**: Afellai3
