@@ -2,11 +2,12 @@
 
 ## 📌 Overview
 
-**Lume Finance** è un sistema completo di gestione finanze personali sviluppato come progetto full-stack moderno.
+**Lume Finance** è un sistema completo di gestione finanze personali sviluppato come progetto full-stack moderno con supporto **app mobile Android nativa** tramite Capacitor.
 
 ### Tech Stack
 - **Backend**: FastAPI 0.104 (Python 3.11+)
 - **Frontend**: React 18.3 + TypeScript 5.5
+- **Mobile**: Capacitor 6 + Android Studio
 - **Database**: SQLite 3
 - **UI Libraries**: Lucide React (icone), Chart.js (grafici)
 - **State Management**: React Context API
@@ -15,165 +16,175 @@
 
 ## 🎯 Caratteristiche Uniche
 
-### 1. Scomposizione Automatica Costi Nascosti
+### 1. Mobile App Android (Capacitor)
 
-Feature **esclusiva** che calcola i costi reali di utilizzo per:
+**Setup completo** per build e distribuzione come APK Android:
+- `frontend/.env` → `VITE_API_URL=http://<IP_PC>:8000`
+- Backend avviato con `--host 0.0.0.0` per essere raggiungibile in rete locale
+- CORS backend configurato per `http://localhost` (WebView Capacitor)
+- **Global fetch patch** in `main.tsx`: trasparente a tutti i componenti
+- **Safe areas** tramite CSS `env(safe-area-inset-*)` in `Layout.tsx`
 
-#### Veicoli
-- Carburante (consumo L/100km × prezzo)
-- Manutenzione (costo per km)
-- Ammortamento (deprezzamento nel tempo)
+#### Flusso build mobile
+```bash
+cd frontend
+npm run build      # vite build (senza tsc)
+npx cap sync       # copia dist → android/assets
+npx cap open android  # apri Android Studio → build APK
+```
 
-#### Elettrodomestici
-- Consumo energetico (kWh × tariffa)
-- Ammortamento orario
+#### Note critiche
+- `package.json` build script: `"build": "vite build"` (NO `tsc &&`)
+- `@capacitor/status-bar` NON installato → non importarlo in Layout.tsx
+- Connessione WiFi: telefono e PC devono essere sulla stessa rete
+- IP può cambiare ad ogni connessione WiFi → aggiornare `.env` e rebuilda
 
-**Implementazione**: Campo `scomposizione_json` in tabella `movimenti` con breakdown dettagliato.
+### 2. Global Fetch Patch
 
-### 2. Budget con Logica Prioritaria
+In `main.tsx`, prima del render React, viene applicata una patch a `window.fetch` per piattaforma nativa:
+
+```typescript
+if (Capacitor.isNativePlatform()) {
+  const API_BASE = import.meta.env.VITE_API_URL || '';
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    if (typeof input === 'string' && input.startsWith('/api/')) {
+      input = `${API_BASE}${input}`;
+    }
+    return originalFetch(input, init);
+  };
+}
+```
+
+**Motivazione**: molte pagine (Ricorrenze, Categorie, Conti, ecc.) usano `fetch('/api/...')` direttamente invece di `api.ts`. Su Capacitor, le URL relative risolvono a `capacitor://localhost/api/...` restituendo l'`index.html`. La patch risolve il problema globalmente senza modificare ogni singola pagina.
+
+### 3. API Client Centralizzato (`api.ts`)
+
+```typescript
+// frontend/src/config/api.ts
+export const api = {
+  async get(endpoint: string) { ... },
+  async post(endpoint: string, data?: any) { ... },
+  async put(endpoint: string, data?: any) { ... },
+  async delete(endpoint: string) { ... },
+  getUrl(): string { ... }
+};
+```
+
+**Features**:
+- `fetchWithTimeout`: abort dopo 30s
+- `fetchWithRetry`: 2 retry automatici con 1s di attesa
+- Throttle alert: max 1 popup ogni 5s per evitare spam
+- Auto-detect piattaforma con `Capacitor.isNativePlatform()`
+
+### 4. Scomposizione Automatica Costi Nascosti
+
+Feature **esclusiva** in campo `scomposizione_json` di `movimenti`:
+
+```json
+{
+  "tipo": "veicolo",
+  "carburante": 45.20,
+  "manutenzione": 18.00,
+  "ammortamento": 22.30,
+  "km": 300
+}
+```
+
+### 5. Budget con Logica Prioritaria
 
 Calcolo spesa con **doppia priorità**:
-1. Movimenti con `budget_id` esplicito (massima priorità)
-2. Movimenti con `categoria_id` (fallback automatico)
+1. `budget_id` esplicito su movimento (massima priorità)
+2. Fallback automatico su `categoria_id` del movimento
 
-Permette budget "trasversali" tipo "Emergenze" che accettano spese di qualsiasi categoria.
+### 6. Obiettivi con Calcolo da Movimenti
 
-### 3. Obiettivi Risparmio con Calcolo da Movimenti
-
-**NON più campo `importo_attuale` manuale**, ma calcolo automatico da:
 ```sql
 SELECT SUM(importo) FROM movimenti 
 WHERE obiettivo_id = ? AND tipo = 'entrata'
 ```
 
-Garantisce coerenza dati - unica fonte di verità è la tabella movimenti.
+Il campo `importo_attuale` in `obiettivi_risparmio` è **DEPRECATO**.
 
-### 4. Dashboard Personalizzabile
+### 7. Tema Dark/Light Avanzato
 
-Widgets riordinabili e toggle-able con persistenza localStorage:
-- Saldo Totale
-- Entrate vs Uscite (grafico)
-- Top Categorie
-- Ultimi Movimenti
-- Budget & Obiettivi
-
-**Hook**: `useDashboardLayout()` gestisce stato e persistenza.
-
-### 5. Tema Dark/Light Avanzato
-
-- **Contrasti WCAG AAA**: 16.5:1 per massima accessibilità
-- **Context Globale**: Tutti i componenti condividono stato tema
-- **Persistenza**: localStorage con chiave `theme_mode`
-- **Auto-detect**: Preferenza sistema con `prefers-color-scheme`
-- **Transizioni smooth**: 200ms ease su tutti i colori
+- **Contrasti WCAG AAA**: 16.5:1
+- **Context Globale**: `providers/ThemeProvider` (NON `hooks/useTheme`)
+- **Persistenza**: `localStorage` key `theme_mode`
+- **⚠️ Regola d'oro**: importare sempre `useTheme` da `providers/ThemeProvider`
 
 ---
 
 ## 💾 Architettura Database
 
-### Tabelle Principali
-
+### Tabelle
 ```sql
 conti                   -- Conti bancari
-categorie               -- Categorie entrate/uscite
+categorie               -- Categorie entrate/uscite (custom)
 movimenti               -- Transazioni finanziarie
 budget                  -- Budget per categoria
 obiettivi_risparmio     -- Obiettivi di risparmio
 beni                    -- Veicoli ed elettrodomestici
+ricorrenze              -- Movimenti ricorrenti
+applied_migrations      -- Tracking migrazioni eseguite
 ```
 
-### Relazioni Chiave
-
+### Migrations applicate
 ```
-movimenti.categoria_id   → categorie.id
-movimenti.conto_id       → conti.id
-movimenti.budget_id      → budget.id         (⭐ Priorità esplicita)
-movimenti.obiettivo_id   → obiettivi.id      (⭐ Allocazione risparmio)
-movimenti.bene_id        → beni.id           (Scomposizione costi)
-
-budget.categoria_id      → categorie.id
+001_add_icona_colore_categorie.sql
+002_add_obiettivi_table.sql
+003_add_scomposizione_columns.sql
+003_enhance_beni_table.sql
+004_add_budget_id_to_movimenti.sql
+004_enhance_budget_obiettivi.sql
+005_add_ricorrenze.sql
+006_add_categorie_custom.sql
 ```
-
-### Migrations System
-
-Migrations SQL incrementali in `database/migrations/`:
-
-```bash
-001_add_icona_colore_categorie.sql     # Icone e colori categorie
-002_add_obiettivi_table.sql            # Tabella obiettivi risparmio
-003_add_scomposizione_columns.sql      # Campo scomposizione_json
-004_add_budget_id_to_movimenti.sql     # Budget esplicito
-```
-
-Eseguite automaticamente all'avvio con tracking in `applied_migrations`.
 
 ---
 
 ## 🎨 Frontend Architecture
 
-### Component Structure
+### Pages & Navigation
 
 ```
-components/
-├── layout/
-│   ├── Layout.tsx          # Container principale
-│   ├── Header.tsx          # Logo + ThemeToggle + UserInfo
-│   └── BottomNav.tsx       # 5-tab navigation
-├── ui/
-│   ├── Button.tsx
-│   ├── Card.tsx
-│   ├── Input.tsx
-│   └── ConfirmDialog.tsx
-├── ThemeToggle.tsx     # Switch Sun/Moon
-└── DashboardCustomizer.tsx  # Modal personalizzazione
-```
-
-### Hooks Custom
-
-```typescript
-useTheme()              // Gestione tema dark/light
-useDashboardLayout()    // Layout dashboard personalizzabile
-useApi()                // Wrapper fetch API con error handling
+App.tsx
+├── Dashboard
+├── MovimentiWithTabs
+│   ├── [tab] Movimenti
+│   ├── [tab] Ricorrenze
+│   └── [tab] Categorie
+├── Patrimonio
+│   ├── [tab] Conti
+│   └── [tab] Beni
+├── Finanza
+│   ├── [tab] Budget
+│   └── [tab] Obiettivi
+└── Impostazioni
 ```
 
 ### Context Providers
 
 ```typescript
-ThemeProvider           // Tema globale condiviso
-ToastProvider           // Notifiche toast
-ConfirmProvider         // Dialog conferma azioni
+ThemeProvider       // Tema dark/light globale
+ToastProvider       // Notifiche toast
+ConfirmProvider     // Dialog conferma azioni
 ```
 
-### Styling System
-
-**Design System** in `styles/theme.ts`:
+### Hooks Custom
 
 ```typescript
-colors: {
-  primary, success, warning, danger, info,
-  background, surface, border,
-  text: { primary, secondary, muted, disabled }
-}
-spacing: { xs, sm, md, lg, xl, 2xl, 3xl }
-typography: { fontFamily, fontSize, fontWeight, lineHeight }
-borderRadius: { sm, md, lg, xl, full }
-shadows: { sm, md, lg, xl, primary, none }
-transitions: { fast, base, slow }
-breakpoints: { sm, md, lg, xl }
+useTheme()              // da providers/ThemeProvider (NON hooks/)
+useDashboardLayout()    // layout widget personalizzabile
 ```
 
-**CSS Variables** in `styles/global.css`:
+### Design System (`styles/theme.ts`)
 
-```css
-:root {
-  --color-background, --color-surface, 
-  --color-text-primary, --color-text-secondary,
-  --color-border, --color-primary, ...
-}
-
-[data-theme='dark'] {
-  /* Override con palette dark */
-}
+```typescript
+colors: { primary, success, warning, danger, background, surface, text, border }
+spacing: { xs, sm, md, lg, xl, 2xl }
+typography: { fontSize, fontWeight, lineHeight }
+borderRadius, shadows, transitions, breakpoints
 ```
 
 ---
@@ -181,230 +192,112 @@ breakpoints: { sm, md, lg, xl }
 ## 🛠️ Development History
 
 ### Fase 1: Setup Iniziale (Gen 2026)
-- Struttura backend FastAPI
-- Schema database SQLite
-- CRUD base per movimenti/conti
-- Frontend React con TypeScript
+- Struttura backend FastAPI + schema SQLite
+- CRUD base movimenti/conti + frontend React/TypeScript
 
 ### Fase 2: Feature Core (Gen-Feb 2026)
-- Sistema categorie con icone/colori
-- Budget per categoria
-- Obiettivi risparmio
+- Categorie con icone/colori, Budget, Obiettivi
 - Gestione beni (veicoli/elettrodomestici)
-- Scomposizione automatica costi
+- Scomposizione automatica costi nascosti
 
 ### Fase 3: UI/UX Enhancements (Feb 2026)
-- Tema dark/light con WCAG AAA
-- Logo cliccabile in header
-- Bottom navigation mobile-first
-- Animazioni e transizioni smooth
-- Design system coerente
-
-### Fase 4: Personalizzazione (Feb 2026)
+- Tema dark/light WCAG AAA
+- Bottom navigation, logo cliccabile, animazioni
 - Dashboard customizer (show/hide + riordino widget)
-- Persistenza layout in localStorage
-- Hook `useDashboardLayout`
 
-### Fase 5: Fix & Refinements (Feb 2026)
-- Fix contrasti dark mode
-- Fix ThemeToggle import da providers
-- Fix Layout/Header context condiviso
-- Documentazione completa
+### Fase 4: Sprint Ricorrenze & Categorie Custom (Feb 2026)
+- Movimenti ricorrenti automatici
+- Categorie personalizzabili dall'utente
+
+### Fase 5: Mobile App Android (Mar 2026)
+- Integrazione Capacitor per build Android nativo
+- Fix backend: `--host 0.0.0.0` per rete locale
+- Fix CORS: origins per Capacitor WebView
+- Fix `Layout.tsx`: rimosso `@capacitor/status-bar`, CSS `env()` safe areas
+- Fix `api.ts`: timeout, retry, throttle alert
+- Fix `main.tsx`: global fetch patch per tutti i componenti nativi
+- Fix dipendenze: `@capacitor/core`, `@capacitor/android`
+- Fix `package.json`: build senza `tsc` pre-check
 
 ---
 
 ## 🐛 Bug Fixes Log
 
-### Database & Backend
+### Mar 2026 - Mobile
+
+#### Fix: Backend non raggiungibile da telefono
+**Problema**: Backend ascoltava su `127.0.0.1` (solo localhost)  
+**Soluzione**: `uvicorn --host 0.0.0.0 --port 8000`
+
+#### Fix: CORS bloccato su mobile
+**Problema**: `No 'Access-Control-Allow-Origin' header` da WebView Android  
+**Soluzione**: Aggiunto `http://localhost` e `capacitor://localhost` in `allow_origins`
+
+#### Fix: `@capacitor/status-bar` non installato
+**Problema**: Build falliva per import mancante in `Layout.tsx`  
+**Soluzione**: Rimosso import, usato CSS `env(safe-area-inset-*)` nativo
+
+#### Fix: Pagine con `fetch('/api/...')` diretto
+**Problema**: `Ricorrenze`, `Categorie`, `Conti`, ecc. usavano fetch relativo → HTML 404 su mobile  
+**Soluzione**: Global patch in `main.tsx` che prepend `VITE_API_URL` su native
+
+#### Fix: ERR_CONNECTION_TIMED_OUT al primo avvio
+**Problema**: 8+ richieste simultanee saturavano il pool connessioni Android WebView  
+**Soluzione**: Retry logic in `api.ts` con 2 tentativi + 1s wait; timeout 30s
+
+### Feb 2026
 
 #### Fix: `conn.commit()` mancanti
-**Problema**: Modifiche non persistevano in DB  
-**Soluzione**: Aggiunto `conn.commit()` dopo INSERT/UPDATE/DELETE
+**Problema**: Modifiche non persistevano  
+**Soluzione**: Aggiunto dopo INSERT/UPDATE/DELETE
 
-#### Fix: Campo `importo_attuale` deprecato
-**Problema**: Valore manuale disallineato da movimenti  
-**Soluzione**: Calcolo automatico da `SUM(movimenti.importo)`
-
-#### Fix: Encoding UTF-8 Windows
-**Problema**: `UnicodeDecodeError` su Windows  
-**Soluzione**: `open(file, 'r', encoding='utf-8')`
-
-### Frontend & UI
+#### Fix: Obiettivi `importo_attuale` disallineato
+**Problema**: Valore manuale non coerente con movimenti  
+**Soluzione**: Calcolo automatico `SUM(movimenti.importo)` dove `obiettivo_id = ?`
 
 #### Fix: Dark mode contrasti insufficienti
-**Problema**: Testo secondario `#B0B0B0` poco leggibile su `#121212`  
-**Soluzione**: 
-- Background: `#121212` → `#0F0F0F` (più nero)
-- Text primary: `#E8E8E8` → `#F5F5F5` (+10%)
-- Text secondary: `#B0B0B0` → `#C0C0C0` (+15%)
-- **Risultato**: Contrasto 16.5:1 (WCAG AAA)
+**Soluzione**: `#0F0F0F` background, `#F5F5F5` text primary → 16.5:1 (WCAG AAA)
 
-#### Fix: ThemeToggle non funziona
-**Problema**: Click su toggle non cambia tema  
+#### Fix: ThemeToggle non funzionava
 **Causa**: Import da `hooks/useTheme` (istanza separata)  
-**Soluzione**: Import da `providers/ThemeProvider` (context condiviso)
-
-#### Fix: Layout/Header tema non sincronizzato
-**Problema**: Header resta dark anche in light mode  
-**Causa**: Import da `hooks/useTheme` invece di `providers/ThemeProvider`  
-**Soluzione**: Sostituito import in:
-- `components/layout/Layout.tsx`
-- `components/layout/Header.tsx`
-- `components/ThemeToggle.tsx`
-
-**Regola d'oro**: Tutti i componenti devono importare `useTheme` da `providers/ThemeProvider` per condividere stato globale.
-
----
-
-## 📚 Documentazione
-
-### Struttura `/docs`
-
-```
-docs/
-├── STEP_5_CUSTOMIZABLE_DASHBOARD.md
-│   └─ Guida completa dashboard personalizzabile
-├── DARK_MODE_SETUP.md
-│   └─ Setup tema dark/light da zero
-├── DARK_MODE_FIX.md
-│   └─ Fix contrasti e problemi comuni
-├── FIX_ALL_THEME_IMPORTS.md
-│   └─ Come fixare import useTheme in bulk
-└── DASHBOARD_INTEGRATION_EXAMPLE.md
-    └─ Esempi codice integrazione
-```
-
-### Checklist Testing
-
-#### Dark Mode
-- [ ] Toggle Light/Dark funziona
-- [ ] Testi leggibili (contrasto > 7:1)
-- [ ] Bordi visibili ma non invasivi
-- [ ] Transizioni smooth (no flash)
-- [ ] Persistenza dopo refresh
-- [ ] Auto-detect preferenza sistema
-
-#### Dashboard Personalizzabile
-- [ ] Toggle show/hide widget
-- [ ] Riordino con frecce ⬆️⬇️
-- [ ] Reset a default
-- [ ] Persistenza layout
-- [ ] Modal chiude con overlay click
-
-#### Scomposizione Costi
-- [ ] Calcolo carburante corretto
-- [ ] Ammortamento veicolo/elettrodomestico
-- [ ] JSON scomposizione ben formattato
-- [ ] Display breakdown in UI
-
----
-
-## 🚀 Workflow Sviluppo
-
-### Branch Strategy
-
-```bash
-main              # Production-ready code
-├─ feature/*     # Nuove features
-├─ fix/*         # Bug fixes
-└─ docs/*        # Documentazione
-```
-
-### Commit Messages
-
-```bash
-feat: Add dashboard customizer
-fix: Theme toggle now works correctly
-docs: Update README with dark mode section
-refactor: Extract theme logic to context
-chore: Remove unused imports
-```
-
-### Testing Locale
-
-```bash
-# Backend
-cd backend
-python -m pytest tests/
-
-# Frontend
-cd frontend
-npm test
-npm run lint
-```
+**Soluzione**: Import da `providers/ThemeProvider`
 
 ---
 
 ## 📝 TODO & Roadmap
 
 ### High Priority
-- [ ] Drag & Drop riordino widget
-- [ ] Export PDF report
+- [ ] Drag & Drop riordino widget dashboard
+- [ ] Export PDF/Excel report
 - [ ] Notifiche push budget superati
-- [ ] Grafici trend mensili
 
 ### Medium Priority
 - [ ] Multi-utente con auth
-- [ ] Cloud sync
+- [ ] Cloud sync e backup automatico
 - [ ] PWA installabile
-- [ ] Dark mode auto-switch per orario
+- [ ] iOS build (Capacitor)
 
 ### Low Priority
-- [ ] Mobile app (React Native)
 - [ ] API bancarie PSD2
 - [ ] ML previsioni spesa
 - [ ] Tag personalizzati
+- [ ] Dark mode auto-switch per orario
 
 ---
 
-## 🤝 Contributi & Team
+## 🤝 Autore
 
-### Autore Principale
 **Afellai3**  
 Data Analyst con Power BI | Trasporto e Logistica  
-Montoro Superiore, Salerno, IT
+Provincia di Salerno, Campania, IT
 
 ### Stack Expertise
-- Python (FastAPI, Pandas, NumPy)
-- TypeScript/React
+- Python (FastAPI, Pandas)
+- TypeScript / React / Capacitor
 - SQL (SQLite, PostgreSQL)
 - Power BI, DAX
-- Git, CI/CD
+- Git
 
 ---
 
-## 🔗 Risorse Utili
-
-### Documentazione Ufficiale
-- [FastAPI Docs](https://fastapi.tiangolo.com/)
-- [React Docs](https://react.dev/)
-- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
-- [SQLite Documentation](https://www.sqlite.org/docs.html)
-
-### Best Practices
-- [WCAG Accessibility Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
-- [React Context Best Practices](https://react.dev/learn/passing-data-deeply-with-context)
-- [FastAPI Best Practices](https://github.com/zhanymkanov/fastapi-best-practices)
-
----
-
-## 📊 Metriche Progetto
-
-### Codebase
-- **Backend**: ~2,500 LOC Python
-- **Frontend**: ~4,000 LOC TypeScript/TSX
-- **Database**: 6 tabelle + migrations
-- **Componenti React**: ~25
-- **API Endpoints**: ~30
-
-### Performance
-- **Startup backend**: < 2s
-- **Startup frontend**: < 5s (dev mode)
-- **Query DB medie**: < 50ms
-- **Render dashboard**: < 100ms
-
----
-
-**✨ Lume Finance - Modern Personal Finance Management ✨**
-
-*Last updated: 26 Feb 2026*
+*Last updated: 03 Mar 2026*
