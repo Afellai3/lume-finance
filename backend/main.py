@@ -11,10 +11,15 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS per development
+# CORS per development e Capacitor mobile
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",  # Vite dev server
+        "http://localhost",        # Capacitor Android/iOS
+        "capacitor://localhost",   # Capacitor iOS
+        "ionic://localhost",       # Ionic
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
