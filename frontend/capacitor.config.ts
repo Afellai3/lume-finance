@@ -5,13 +5,11 @@ const config: CapacitorConfig = {
   appName: 'Lume Finance',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
+    androidScheme: 'http',  // Changed from 'https' to allow HTTP backend
     cleartext: true,
   },
   android: {
     allowMixedContent: true,
-    // Use custom network security config
-    resources: ['android-resources'],
   },
 };
 
